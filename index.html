@@ -63,7 +63,7 @@
 
         <!-- 投稿カード一覧 -->
         <div id="posts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- JavaScriptで挿入されます -->
+            <!-- JavaScriptで動的挿入 -->
         </div>
     </main>
 
@@ -77,7 +77,7 @@
 
     <!-- 1. 「挑戦を投稿」モーダル -->
     <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -105,27 +105,31 @@
             <!-- 投稿フォーム -->
             <form onsubmit="handlePostSubmit(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">タイトル</label>
-                    <input type="text" id="post-title" required placeholder="挑戦のタイトルを入力" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">カテゴリー</label>
-                    <select id="post-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
-                        <option value="クラファン">クラファン</option>
-                        <option value="求人・募集">求人・募集</option>
-                        <option value="企業説明">企業説明</option>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">カテゴリー <span class="text-orange-500">*</span></label>
+                    <select id="post-category" onchange="onCategoryChange()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        <option value="クラファン">クラウドファンディング</option>
+                        <option value="求人・募集">求人・メンバー募集</option>
+                        <option value="企業説明">企業説明・事業紹介</option>
                         <option value="その他">その他</option>
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">タイトル <span class="text-orange-500">*</span></label>
+                    <input type="text" id="post-title" required placeholder="挑戦のタイトルを入力" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">プロジェクト・関連URL（任意）</label>
                     <input type="url" id="post-url" placeholder="https://example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">概要・詳細説明</label>
-                    <textarea id="post-content" rows="4" required placeholder="挑戦の詳細、解決したい課題、想いを記載してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+
+                <!-- 動的フィールドエリア (カテゴリー毎に切替) -->
+                <div id="dynamic-fields" class="space-y-4 pt-2 border-t border-slate-800/80">
+                    <!-- JavaScriptで初期生成されます -->
                 </div>
-                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
+
+                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-orange-500/20 mt-2">
                     無料掲載枠（1回分）を消費して投稿する
                 </button>
             </form>
@@ -186,14 +190,20 @@
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
-            <span id="detail-category" class="inline-block bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[11px] font-bold px-2.5 py-1 rounded-lg mb-3">カテゴリ</span>
+            
+            <div class="flex items-center space-x-2 mb-3">
+                <span id="detail-category" class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[11px] font-bold px-2.5 py-1 rounded-lg">カテゴリ</span>
+            </div>
+
             <h3 id="detail-title" class="text-lg font-bold text-white mb-2">タイトル</h3>
             <p id="detail-author" class="text-xs text-slate-400 mb-4 pb-4 border-b border-slate-800">投稿者: ---</p>
-            <div id="detail-content" class="text-xs text-slate-300 leading-relaxed space-y-3 whitespace-pre-wrap mb-6">
-                詳細内容
-            </div>
             
-            <!-- プロジェクトURLボタンエリア -->
+            <!-- 動的カテゴリーコンテンツ詳細 -->
+            <div id="detail-dynamic-content" class="text-xs text-slate-300 space-y-4 mb-6">
+                <!-- JavaScriptで整形してレンダリング -->
+            </div>
+
+            <!-- プロジェクトURLボタン -->
             <div id="detail-url-container" class="mb-6 hidden">
                 <a id="detail-url-btn" href="#" target="_blank" class="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
                     <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
@@ -213,36 +223,51 @@
 
     <!-- JavaScript -->
     <script>
+        // サンプル初期データ
         let samplePosts = [
             {
                 id: 1,
-                title: "【クラウドファンディング】次世代EVモビリティの開発資金を募集中！",
+                title: "【次世代EVモビリティ】プロトタイプ開発および実証実験プロジェクト",
                 category: "クラファン",
                 author: "山口 功夢",
                 url: "https://camp-fire.jp",
-                content: "現在、環境に優しく手軽に移動できるコンパクトEVモビリティを開発しています。本プロジェクトではプロトタイプの製作費用および実証実験にかかる資金調達を目指しています。応援よろしくお願いいたします！",
-                cheers: 24,
-                date: "2026/10/14"
+                cheers: 32,
+                date: "2026/10/14",
+                details: {
+                    targetAmount: "1,500,000円",
+                    useOfFunds: "・車体シャシープロトタイプ設計・製造費用\n・路上走行テストおよび安全基準認証申請費用",
+                    nextGoal: "目標達成後のネクストゴール：2,500,000円（走行距離を2倍にする拡張バッテリーモジュールの開発に充当します）",
+                    overview: "環境に優しくコンパクトな新しい移動手段を提供するための製品開発を行っています。"
+                }
             },
             {
                 id: 2,
-                title: "iOS/Webエンジニア募集！新規挑戦者コミュニティの立ち上げメンバー",
+                title: "【エンジニア・デザイナー募集】新規挑戦者支援プラットフォームの立ち上げ",
                 category: "求人・募集",
                 author: "Globiz 運営チーム",
                 url: "https://github.com",
-                content: "Globizのさらなる機能拡張に伴い、フロントエンド・Swift開発に携わってくれる開発仲間を募集しています！学生・社会人問わず気軽にご連絡ください。",
-                cheers: 18,
-                date: "2026/10/12"
+                cheers: 19,
+                date: "2026/10/12",
+                details: {
+                    role: "UI/UXデザイナー / Webエンジニア (Tailwind, JS)",
+                    workType: "完全リモート / プロジェクト単位の成果報酬（応相談）",
+                    skills: "・デザインツール（Figmaなど）の使用経験\n・Webサービス開発への興味、自走力のある方",
+                    overview: "Globizの機能拡張に伴い、初期開発にコミットしてくれる仲間を探しています！"
+                }
             },
             {
                 id: 3,
-                title: "【企業説明】AI×教育で学びの未来を変えるスタートアップ",
+                title: "【企業説明】AI×教育で学びの効率を極限まで高めるEdTechスタートアップ",
                 category: "企業説明",
                 author: "EdTech Inc.",
                 url: "",
-                content: "私たちは個人の学習効率を最大化するAIソリューションを提供しています。事業拡大に伴いインターン・中途採用を積極実施中です。",
-                cheers: 12,
-                date: "2026/10/10"
+                cheers: 14,
+                date: "2026/10/10",
+                details: {
+                    business: "個人の学習速度・理解度に合わせて自動で学習パスを構築するAIソリューションの開発・提供",
+                    vision: "一人ひとりが最短で「やりたいこと」を形にできる学習基盤を創出すること。",
+                    overview: "現在インターンおよび正社員エンジニアの積極採用を行っております。"
+                }
             }
         ];
 
@@ -250,9 +275,74 @@
         let activePostId = null;
 
         window.onload = function() {
+            onCategoryChange();
             renderPosts();
         };
 
+        // カテゴリー変更時の入力フォーム切り替え
+        function onCategoryChange() {
+            const cat = document.getElementById('post-category').value;
+            const container = document.getElementById('dynamic-fields');
+            container.innerHTML = '';
+
+            if (cat === 'クラファン') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">目標金額 <span class="text-orange-500">*</span></label>
+                        <input type="text" id="cf-target" required placeholder="例: 1,000,000円" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">資金の使い道 <span class="text-orange-500">*</span></label>
+                        <textarea id="cf-use" rows="3" required placeholder="集まった資金をどのように活用するか記載してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">目標達成後の使い道・ネクストゴール（任意）</label>
+                        <textarea id="cf-next" rows="2" placeholder="目標金額を超えた場合の追加の挑戦や使い道" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">プロジェクトの想い・概要</label>
+                        <textarea id="cf-overview" rows="3" placeholder="挑戦の背景や熱意を自由に記載してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                `;
+            } else if (cat === '求人・募集') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集職種・役割 <span class="text-orange-500">*</span></label>
+                        <input type="text" id="job-role" required placeholder="例: UI/UXデザイナー、広報担当者など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">勤務形態・報酬条件 <span class="text-orange-500">*</span></label>
+                        <input type="text" id="job-type" required placeholder="例: 完全リモート / 成果報酬 / プロボノなど" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">求めるスキル・応募条件 <span class="text-orange-500">*</span></label>
+                        <textarea id="job-skills" rows="3" required placeholder="必須スキル、歓迎要件など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集背景・詳細説明</label>
+                        <textarea id="job-overview" rows="3" placeholder="どんなチームか、どのような挑戦を一緒に行うかを記載" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                `;
+            } else {
+                // 企業説明 または その他
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">事業内容 / 活動概要 <span class="text-orange-500">*</span></label>
+                        <textarea id="biz-business" rows="3" required placeholder="行っている事業や取り組んでいる活動内容" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">解決したい課題・目指すビジョン <span class="text-orange-500">*</span></label>
+                        <textarea id="biz-vision" rows="3" required placeholder="どのような未来を目指しているか" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">補足・詳細メッセージ</label>
+                        <textarea id="biz-overview" rows="2" placeholder="自由記述メッセージ" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                    </div>
+                `;
+            }
+        }
+
+        // 記事一覧レンダリング
         function renderPosts() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -261,11 +351,11 @@
 
             const filtered = samplePosts.filter(post => {
                 const matchCat = (currentFilter === 'all' || post.category === currentFilter);
-                const matchSearch = post.title.toLowerCase().includes(searchVal) || post.content.toLowerCase().includes(searchVal) || post.author.toLowerCase().includes(searchVal);
+                const matchSearch = post.title.toLowerCase().includes(searchVal) || post.author.toLowerCase().includes(searchVal);
                 return matchCat && matchSearch;
             });
 
-            if(filtered.length === 0) {
+            if (filtered.length === 0) {
                 grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">該当する挑戦は見つかりませんでした</div>`;
                 return;
             }
@@ -275,19 +365,30 @@
                 card.className = "bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition flex flex-col justify-between cursor-pointer group";
                 card.onclick = () => openDetailModal(post.id);
 
-                const linkBadge = post.url ? `<span class="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-link mr-1"></i>リンクあり</span>` : '';
+                let subBadge = '';
+                let summaryText = '';
+
+                if (post.category === 'クラファン') {
+                    subBadge = `<span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-bullseye mr-1"></i>目標: ${post.details.targetAmount}</span>`;
+                    summaryText = post.details.useOfFunds || post.details.overview;
+                } else if (post.category === '求人・募集') {
+                    subBadge = `<span class="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-briefcase mr-1"></i>${post.details.role}</span>`;
+                    summaryText = `【形態】${post.details.workType}\n${post.details.overview}`;
+                } else {
+                    summaryText = post.details.business || post.details.overview;
+                }
 
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center">
+                            <div class="flex items-center flex-wrap gap-1">
                                 <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
-                                ${linkBadge}
+                                ${subBadge}
                             </div>
                             <span class="text-[10px] text-slate-500">${post.date}</span>
                         </div>
                         <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
-                        <p class="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed">${post.content}</p>
+                        <p class="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed whitespace-pre-wrap">${summaryText}</p>
                     </div>
                     <div class="flex justify-between items-center pt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
                         <span><i class="fa-solid fa-user mr-1 text-slate-500"></i>${post.author}</span>
@@ -305,7 +406,7 @@
                 btn.classList.add('bg-slate-800', 'text-slate-300');
             });
             const activeBtn = document.getElementById(`btn-${cat}`);
-            if(activeBtn) {
+            if (activeBtn) {
                 activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
                 activeBtn.classList.add('bg-orange-500', 'text-white');
             }
@@ -330,20 +431,86 @@
             document.getElementById('mypage-modal').classList.add('hidden');
         }
 
+        // 詳細モーダル表示
         function openDetailModal(id) {
             const post = samplePosts.find(p => p.id === id);
-            if(!post) return;
+            if (!post) return;
             activePostId = id;
+
             document.getElementById('detail-category').innerText = post.category;
             document.getElementById('detail-title').innerText = post.title;
-            document.getElementById('detail-author').innerText = `投稿者: ${post.author}`;
-            document.getElementById('detail-content').innerText = post.content;
+            document.getElementById('detail-author').innerText = `投稿者: ${post.author} (${post.date})`;
             document.getElementById('detail-cheers').innerText = post.cheers;
+
+            // 動的コンテンツの構築
+            const container = document.getElementById('detail-dynamic-content');
+            container.innerHTML = '';
+
+            if (post.category === 'クラファン') {
+                container.innerHTML = `
+                    <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
+                        <p class="text-[11px] text-amber-400 font-bold mb-1"><i class="fa-solid fa-bullseye mr-1.5"></i>目標金額</p>
+                        <p class="text-base font-extrabold text-amber-300">${post.details.targetAmount}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-coins text-orange-400 mr-1.5"></i>資金の使い道</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.useOfFunds}</div>
+                    </div>
+                    ${post.details.nextGoal ? `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-flag text-emerald-400 mr-1.5"></i>ネクストゴール・使い道</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.nextGoal}</div>
+                    </div>` : ''}
+                    ${post.details.overview ? `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-align-left text-blue-400 mr-1.5"></i>プロジェクト概要・想い</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.overview}</div>
+                    </div>` : ''}
+                `;
+            } else if (post.category === '求人・募集') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                            <p class="text-[11px] text-blue-400 font-bold mb-1"><i class="fa-solid fa-user-tag mr-1.5"></i>募集職種・役割</p>
+                            <p class="text-xs font-bold text-white">${post.details.role}</p>
+                        </div>
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                            <p class="text-[11px] text-emerald-400 font-bold mb-1"><i class="fa-solid fa-clock mr-1.5"></i>勤務形態・報酬</p>
+                            <p class="text-xs font-bold text-white">${post.details.workType}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-check-double text-purple-400 mr-1.5"></i>求めるスキル・条件</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.skills}</div>
+                    </div>
+                    ${post.details.overview ? `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-circle-info text-orange-400 mr-1.5"></i>募集背景・チーム紹介</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.overview}</div>
+                    </div>` : ''}
+                `;
+            } else {
+                container.innerHTML = `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-building text-purple-400 mr-1.5"></i>事業内容 / 活動概要</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.business}</div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-eye text-emerald-400 mr-1.5"></i>解決したい課題・目指すビジョン</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.vision}</div>
+                    </div>
+                    ${post.details.overview ? `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-comment-dots text-blue-400 mr-1.5"></i>補足メッセージ</h4>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${post.details.overview}</div>
+                    </div>` : ''}
+                `;
+            }
 
             // URLの設定
             const urlContainer = document.getElementById('detail-url-container');
             const urlBtn = document.getElementById('detail-url-btn');
-            if(post.url && post.url.trim() !== "") {
+            if (post.url && post.url.trim() !== "") {
                 urlBtn.href = post.url;
                 urlContainer.classList.remove('hidden');
             } else {
@@ -352,36 +519,61 @@
 
             document.getElementById('detail-modal').classList.remove('hidden');
         }
+
         function closeDetailModal() {
             document.getElementById('detail-modal').classList.add('hidden');
         }
 
         function cheerPost() {
-            if(!activePostId) return;
+            if (!activePostId) return;
             const post = samplePosts.find(p => p.id === activePostId);
-            if(post) {
+            if (post) {
                 post.cheers += 1;
                 document.getElementById('detail-cheers').innerText = post.cheers;
                 renderPosts();
             }
         }
 
+        // 新規投稿処理
         function handlePostSubmit(e) {
             e.preventDefault();
+            const cat = document.getElementById('post-category').value;
             const title = document.getElementById('post-title').value;
-            const category = document.getElementById('post-category').value;
             const url = document.getElementById('post-url').value;
-            const content = document.getElementById('post-content').value;
+
+            let detailsObj = {};
+
+            if (cat === 'クラファン') {
+                detailsObj = {
+                    targetAmount: document.getElementById('cf-target').value,
+                    useOfFunds: document.getElementById('cf-use').value,
+                    nextGoal: document.getElementById('cf-next').value,
+                    overview: document.getElementById('cf-overview').value
+                };
+            } else if (cat === '求人・募集') {
+                detailsObj = {
+                    role: document.getElementById('job-role').value,
+                    workType: document.getElementById('job-type').value,
+                    skills: document.getElementById('job-skills').value,
+                    overview: document.getElementById('job-overview').value
+                };
+            } else {
+                detailsObj = {
+                    business: document.getElementById('biz-business').value,
+                    vision: document.getElementById('biz-vision').value,
+                    overview: document.getElementById('biz-overview').value
+                };
+            }
 
             const newPost = {
                 id: Date.now(),
                 title: title,
-                category: category,
+                category: cat,
                 author: "山口 功夢",
                 url: url,
-                content: content,
                 cheers: 0,
-                date: new Date().toLocaleDateString('ja-JP')
+                date: new Date().toLocaleDateString('ja-JP'),
+                details: detailsObj
             };
 
             samplePosts.unshift(newPost);
@@ -390,8 +582,7 @@
 
             document.getElementById('post-title').value = '';
             document.getElementById('post-url').value = '';
-            document.getElementById('post-content').value = '';
-            alert('挑戦を投稿しました！');
+            alert('新しい挑戦を投稿しました！');
         }
     </script>
 </body>
