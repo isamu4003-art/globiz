@@ -119,7 +119,6 @@
                     <input type="text" id="post-title" required placeholder="挑戦のタイトルを入力" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                 </div>
 
-                <!-- 画像アップロードフィールド -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">メイン画像（1枚・任意）</label>
                     <input type="file" id="post-image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-orange-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-800 rounded-xl">
@@ -191,13 +190,13 @@
     <!-- 3. 記事詳細 モーダル -->
     <div id="detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition z-10">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             
-            <!-- 詳細モーダル内の大画像表示エリア -->
-            <div id="detail-image-container" class="mb-4 hidden">
-                <img id="detail-image" src="" class="w-full h-48 object-cover rounded-xl border border-slate-800">
+            <!-- 改善版: 全体表示用画像エリア (object-containでカット防止) -->
+            <div id="detail-image-container" class="mb-4 hidden bg-slate-950/60 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center max-h-80">
+                <img id="detail-image" src="" class="w-full max-h-80 object-contain">
             </div>
 
             <div class="flex items-center space-x-2 mb-3">
@@ -216,12 +215,19 @@
                 </a>
             </div>
 
+            <!-- フッター操作エリア（応援ボタン ＋ 削除ボタン） -->
             <div class="flex justify-between items-center pt-4 border-t border-slate-800">
                 <button onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-orange-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-heart"></i>
                     <span>応援する (<span id="detail-cheers">0</span>)</span>
                 </button>
-                <button onclick="closeDetailModal()" class="bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl">閉じる</button>
+                <div class="flex items-center space-x-2">
+                    <button id="delete-btn" onclick="deletePost()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs transition hidden flex items-center space-x-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>削除</span>
+                    </button>
+                    <button onclick="closeDetailModal()" class="bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl">閉じる</button>
+                </div>
             </div>
         </div>
     </div>
@@ -237,6 +243,7 @@
             onSnapshot, 
             doc, 
             updateDoc, 
+            deleteDoc, 
             increment, 
             query, 
             orderBy 
@@ -272,7 +279,7 @@
             listenToPosts();
         });
 
-        // Firestoreからリアルタイムに投稿を取得
+        // Firestoreリアルタイム同期
         function listenToPosts() {
             const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
@@ -287,7 +294,7 @@
             });
         }
 
-        // 記事一覧レンダリング（サムネイル表示対応）
+        // 記事一覧表示
         window.renderPosts = function() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -323,7 +330,7 @@
                     summaryText = post.details?.business || post.details?.overview || '';
                 }
 
-                // サムネイル画像HTML (1/5サイズのスクエア型サムネイル)
+                // カードサムネイル（右側に綺麗に1/5サイズ配置）
                 const thumbHtml = post.imageUrl ? `
                     <div class="w-1/5 flex-shrink-0 ml-3">
                         <img src="${post.imageUrl}" class="w-full h-16 object-cover rounded-xl border border-slate-800">
@@ -340,7 +347,6 @@
                             <span class="text-[10px] text-slate-500">${post.date || ''}</span>
                         </div>
                         
-                        <!-- タイトル・概要とサムネイル画像の横並びレイアウト -->
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-grow">
                                 <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
@@ -419,7 +425,7 @@
             }
         };
 
-        // 投稿の保存（画像アップロード ＋ Firestore保存）
+        // 投稿処理
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -434,7 +440,6 @@
             let imageUrl = '';
 
             try {
-                // 画像が選択されている場合、Firebase Storageに保存
                 if (imageFile) {
                     const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
                     await uploadBytes(storageRef, imageFile);
@@ -491,6 +496,7 @@
             }
         });
 
+        // 応援ボタンカウントアップ
         window.cheerPost = async function() {
             if (!activePostId) return;
             try {
@@ -502,6 +508,21 @@
                 countElem.innerText = parseInt(countElem.innerText || '0') + 1;
             } catch (error) {
                 console.error("Error updating cheers: ", error);
+            }
+        };
+
+        // 投稿の削除機能
+        window.deletePost = async function() {
+            if (!activePostId) return;
+            if (!confirm('この投稿を本当に削除しますか？')) return;
+
+            try {
+                await deleteDoc(doc(db, "posts", activePostId));
+                closeDetailModal();
+                alert('投稿を削除しました。');
+            } catch (error) {
+                console.error("Error deleting post: ", error);
+                alert('削除権限がないか、エラーが発生しました。');
             }
         };
 
@@ -531,7 +552,15 @@
             if (!post) return;
             activePostId = id;
 
-            // 画像の表示処理
+            // 自分の投稿（山口 功夢）であれば削除ボタンを表示
+            const deleteBtn = document.getElementById('delete-btn');
+            if (post.author === "山口 功夢") {
+                deleteBtn.classList.remove('hidden');
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
+
+            // 画像の全体表示処理（全体が収まるように設定）
             const imgContainer = document.getElementById('detail-image-container');
             const imgElem = document.getElementById('detail-image');
             if (post.imageUrl && post.imageUrl.trim() !== '') {
