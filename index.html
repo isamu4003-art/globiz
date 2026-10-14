@@ -43,11 +43,10 @@
         </div>
     </header>
 
-    <!-- メインコンテンツエリア -->
+    <!-- メインコンテンツ（記事表示エリア） -->
     <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
         <!-- 検索 & カテゴリーフィルター -->
         <div class="flex flex-col md:flex-row gap-4 mb-8 justify-between items-center">
-            <!-- フィルタータブ -->
             <div class="flex items-center space-x-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
                 <button onclick="filterCategory('all')" id="btn-all" class="cat-btn active text-xs font-semibold px-4 py-2 rounded-xl bg-orange-500 text-white whitespace-nowrap transition">すべて</button>
                 <button onclick="filterCategory('クラファン')" id="btn-クラファン" class="cat-btn text-xs font-semibold px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition"><i class="fa-solid fa-rocket text-orange-400 mr-1.5"></i>クラファン</button>
@@ -56,16 +55,15 @@
                 <button onclick="filterCategory('その他')" id="btn-その他" class="cat-btn text-xs font-semibold px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition"><i class="fa-solid fa-sparkles text-amber-400 mr-1.5"></i>その他</button>
             </div>
 
-            <!-- 検索窓 -->
             <div class="relative w-full md:w-72">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                 <input type="text" id="search-input" onkeyup="searchPosts()" placeholder="プロジェクト、地域、名前で検索" class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500">
             </div>
         </div>
 
-        <!-- 投稿カード一覧（グリッド） -->
+        <!-- 投稿カード一覧 -->
         <div id="posts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- JavaScriptで動的読み込み -->
+            <!-- JavaScriptで挿入されます -->
         </div>
     </main>
 
@@ -75,9 +73,9 @@
     </footer>
 
 
-    <!-- ==================== モーダル各種 ==================== -->
+    <!-- ==================== モーダルエリア ==================== -->
 
-    <!-- 1. 投稿作成 & チケット購入誘導 モーダル -->
+    <!-- 1. 「挑戦を投稿」モーダル（購入ボタンもここに集約） -->
     <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
@@ -88,7 +86,7 @@
                 <i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿
             </h3>
 
-            <!-- 残枠ステータス表示 -->
+            <!-- 残枠ステータス -->
             <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
@@ -128,7 +126,7 @@
                 </button>
             </form>
 
-            <!-- Stripe チケット追加購入セクション -->
+            <!-- Stripe チケット追加購入ボタン -->
             <div class="mt-6 pt-5 border-t border-slate-800 space-y-2">
                 <p class="text-[11px] text-slate-400 text-center mb-2 font-medium">💡 掲載枠を追加・購入する場合はこちら</p>
                 <a href="https://buy.stripe.com/8x26oIbba5hq1VkbUlcV201" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs">
@@ -178,7 +176,7 @@
     </div>
 
 
-    <!-- 3. 詳細 モーダル -->
+    <!-- 3. 記事詳細 モーダル -->
     <div id="detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
@@ -202,9 +200,8 @@
     </div>
 
 
-    <!-- JavaScript 処理 -->
+    <!-- JavaScript -->
     <script>
-        // 初期サンプルデータ
         let samplePosts = [
             {
                 id: 1,
@@ -238,12 +235,10 @@
         let currentFilter = 'all';
         let activePostId = null;
 
-        // 初期表示
         window.onload = function() {
             renderPosts();
         };
 
-        // 記事一覧レンダリング
         function renderPosts() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -284,7 +279,6 @@
             });
         }
 
-        // カテゴリー切替
         function filterCategory(cat) {
             currentFilter = cat;
             document.querySelectorAll('.cat-btn').forEach(btn => {
@@ -299,12 +293,10 @@
             renderPosts();
         }
 
-        // 検索機能
         function searchPosts() {
             renderPosts();
         }
 
-        // モーダル操作関数
         function openPostModal() {
             document.getElementById('post-modal').classList.remove('hidden');
         }
@@ -334,7 +326,6 @@
             document.getElementById('detail-modal').classList.add('hidden');
         }
 
-        // 応援追加
         function cheerPost() {
             if(!activePostId) return;
             const post = samplePosts.find(p => p.id === activePostId);
@@ -345,7 +336,6 @@
             }
         }
 
-        // 新規投稿処理
         function handlePostSubmit(e) {
             e.preventDefault();
             const title = document.getElementById('post-title').value;
@@ -366,7 +356,6 @@
             renderPosts();
             closePostModal();
 
-            // フォームリセット
             document.getElementById('post-title').value = '';
             document.getElementById('post-content').value = '';
             alert('挑戦を投稿しました！');
