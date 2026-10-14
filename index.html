@@ -75,7 +75,7 @@
 
     <!-- ==================== モーダルエリア ==================== -->
 
-    <!-- 1. 「挑戦を投稿」モーダル（購入ボタンもここに集約） -->
+    <!-- 1. 「挑戦を投稿」モーダル -->
     <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
@@ -116,6 +116,10 @@
                         <option value="企業説明">企業説明</option>
                         <option value="その他">その他</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">プロジェクト・関連URL（任意）</label>
+                    <input type="url" id="post-url" placeholder="https://example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">概要・詳細説明</label>
@@ -189,6 +193,13 @@
                 詳細内容
             </div>
             
+            <!-- プロジェクトURLボタンエリア -->
+            <div id="detail-url-container" class="mb-6 hidden">
+                <a id="detail-url-btn" href="#" target="_blank" class="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
+                </a>
+            </div>
+
             <div class="flex justify-between items-center pt-4 border-t border-slate-800">
                 <button onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-orange-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-heart"></i>
@@ -208,6 +219,7 @@
                 title: "【クラウドファンディング】次世代EVモビリティの開発資金を募集中！",
                 category: "クラファン",
                 author: "山口 功夢",
+                url: "https://camp-fire.jp",
                 content: "現在、環境に優しく手軽に移動できるコンパクトEVモビリティを開発しています。本プロジェクトではプロトタイプの製作費用および実証実験にかかる資金調達を目指しています。応援よろしくお願いいたします！",
                 cheers: 24,
                 date: "2026/10/14"
@@ -217,6 +229,7 @@
                 title: "iOS/Webエンジニア募集！新規挑戦者コミュニティの立ち上げメンバー",
                 category: "求人・募集",
                 author: "Globiz 運営チーム",
+                url: "https://github.com",
                 content: "Globizのさらなる機能拡張に伴い、フロントエンド・Swift開発に携わってくれる開発仲間を募集しています！学生・社会人問わず気軽にご連絡ください。",
                 cheers: 18,
                 date: "2026/10/12"
@@ -226,6 +239,7 @@
                 title: "【企業説明】AI×教育で学びの未来を変えるスタートアップ",
                 category: "企業説明",
                 author: "EdTech Inc.",
+                url: "",
                 content: "私たちは個人の学習効率を最大化するAIソリューションを提供しています。事業拡大に伴いインターン・中途採用を積極実施中です。",
                 cheers: 12,
                 date: "2026/10/10"
@@ -261,10 +275,15 @@
                 card.className = "bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition flex flex-col justify-between cursor-pointer group";
                 card.onclick = () => openDetailModal(post.id);
 
+                const linkBadge = post.url ? `<span class="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-link mr-1"></i>リンクあり</span>` : '';
+
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-3">
-                            <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
+                            <div class="flex items-center">
+                                <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
+                                ${linkBadge}
+                            </div>
                             <span class="text-[10px] text-slate-500">${post.date}</span>
                         </div>
                         <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
@@ -320,6 +339,17 @@
             document.getElementById('detail-author').innerText = `投稿者: ${post.author}`;
             document.getElementById('detail-content').innerText = post.content;
             document.getElementById('detail-cheers').innerText = post.cheers;
+
+            // URLの設定
+            const urlContainer = document.getElementById('detail-url-container');
+            const urlBtn = document.getElementById('detail-url-btn');
+            if(post.url && post.url.trim() !== "") {
+                urlBtn.href = post.url;
+                urlContainer.classList.remove('hidden');
+            } else {
+                urlContainer.classList.add('hidden');
+            }
+
             document.getElementById('detail-modal').classList.remove('hidden');
         }
         function closeDetailModal() {
@@ -340,6 +370,7 @@
             e.preventDefault();
             const title = document.getElementById('post-title').value;
             const category = document.getElementById('post-category').value;
+            const url = document.getElementById('post-url').value;
             const content = document.getElementById('post-content').value;
 
             const newPost = {
@@ -347,6 +378,7 @@
                 title: title,
                 category: category,
                 author: "山口 功夢",
+                url: url,
                 content: content,
                 cheers: 0,
                 date: new Date().toLocaleDateString('ja-JP')
@@ -357,6 +389,7 @@
             closePostModal();
 
             document.getElementById('post-title').value = '';
+            document.getElementById('post-url').value = '';
             document.getElementById('post-content').value = '';
             alert('挑戦を投稿しました！');
         }
