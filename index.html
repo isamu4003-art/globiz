@@ -154,50 +154,45 @@
         </div>
     </div>
 
-    <!-- 3. MyPage Modal -->
-    <div id="mypage-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
-            <button onclick="closeMyPage()" class="absolute right-5 top-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            
-            <div class="text-center mb-6">
-                <div class="w-20 h-20 rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center text-orange-400 text-3xl font-bold mx-auto mb-3">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-100">マイページ</h3>
-                <p class="text-xs text-slate-400">山口 功夢</p>
-            </div>
-
-            <div class="space-y-3 mb-6 text-xs">
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
-                    <span class="text-emerald-400 font-bold">利用可能（1回）</span>
-                </div>
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-rotate text-blue-400 mr-2"></i>サブスク当月残り</span>
-                    <span class="text-slate-400 font-bold">0 回</span>
-                </div>
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
-                    <span class="text-amber-400 font-bold">0 枚</span>
-                </div>
-            </div>
-
-            <button onclick="alert('iOSアプリと同様に各種チケット購入や決済機能の追加が可能です。')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs mb-2">
-                <i class="fa-solid fa-cart-shopping mr-1.5 text-orange-400"></i> 掲載チケットを購入する
-            </button>
-        </div>
+   <!-- マイページ内の決済・チケット購入エリア -->
+<div class="space-y-3 mb-6 text-xs">
+    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
+        <span class="text-emerald-400 font-bold">利用可能（1回）</span>
     </div>
+    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-rotate text-blue-400 mr-2"></i>サブスク当月残り</span>
+        <span class="text-slate-400 font-bold">0 回</span>
+    </div>
+    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
+        <span class="text-amber-400 font-bold">0 枚</span>
+    </div>
+</div>
+
+<!-- Stripe 決済ボタン（2パターン） -->
+<div class="space-y-2">
+    <!-- 1. 単発チケット購入ボタン -->
+    <a href="https://buy.stripe.com/8x26oIbba5hq1VkbUlcV201" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs">
+        <i class="fa-solid fa-ticket mr-1.5 text-amber-400"></i> 単発掲載チケットを購入（¥5,000）
+    </a>
+
+    <!-- 2. 月額サブスク加入ボタン -->
+    <a href="https://buy.stripe.com/dRm14obba4dm7fE1fHcV200" target="_blank" class="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
+        <i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> 月額プランに加入（¥5,000 / 月）
+    </a>
+</div>
 
     <!-- Application Script -->
     <script>
-        const flagMap = { JP: '🇯🇵', DE: '🇩🇪', PH: '🇵🇭', US: '🇺🇸', GB: '🇬🇧' };
+        const flagMap = { JP: '🇯🇵', DE: '🇩🇪', PH: '🇵🇭', US: '🇺🇸', GB: '🇬🇧' ,'その他'};
         const countryNameMap = { JP: '日本', DE: 'ドイツ', PH: 'フィリピン', US: 'アメリカ', GB: 'イギリス' };
 
         // Sample State (In production, synchronized with Firebase Firestore)
         let posts = [
             {
                 id: "1",
-                authorName: "山口 功夢 / 和食プロジェクト",
+                authorName: "山田太朗 / 和食プロジェクト",
                 countryCode: "DE",
                 city: "フランクフルト",
                 category: "クラファン",
