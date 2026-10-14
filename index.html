@@ -5,125 +5,294 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Globiz - 挑戦と繋がるコミュニティ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-orange-500 selection:text-white">
 
     <!-- Header -->
-    <header class="bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-40 backdrop-blur">
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="filterCategory('all')">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid me-0 fa-globe"></i>
+            <div class="flex items-center gap-3 cursor-pointer" onclick="filterCategory('すべて')">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-orange-500 to-red-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-rocket"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">Globiz</h1>
-                    <p class="text-[10px] text-slate-400 font-medium">Global Community for Challengers</p>
+                    <h1 class="text-xl font-black bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Challenger Hub</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">Globiz - 挑戦と繋がるコミュニティ</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2">
+                <button onclick="openMyPage()" class="p-2 text-slate-300 hover:text-orange-400 transition" title="マイページ">
+                    <i class="fa-solid fa-circle-user text-2xl"></i>
+                </button>
+                <button onclick="openPostModal()" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i>
-                    <span class="hidden sm:inline">挑戦を投稿する</span>
+                    <span>挑戦を投稿</span>
                 </button>
             </div>
         </div>
     </header>
 
+    <!-- Search & Filter Bar -->
+    <div class="bg-slate-900/50 border-b border-slate-800/80 px-4 py-3">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-3 items-center justify-between">
+            <!-- Categories -->
+            <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 no-scrollbar">
+                <button onclick="filterCategory('すべて')" id="cat-すべて" class="cat-btn active px-3.5 py-1.5 rounded-full text-xs font-bold bg-orange-500 text-white transition whitespace-nowrap">すべて</button>
+                <button onclick="filterCategory('クラファン')" id="cat-クラファン" class="cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🚀 クラファン</button>
+                <button onclick="filterCategory('求人・募集')" id="cat-求人・募集" class="cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">👥 求人・募集</button>
+                <button onclick="filterCategory('企業説明')" id="cat-企業説明" class="cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🏢 企業説明</button>
+                <button onclick="filterCategory('その他')" id="cat-その他" class="cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">✨ その他</button>
+            </div>
+            <!-- Search Input -->
+            <div class="relative w-full md:w-72">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                <input type="text" id="search-input" oninput="handleSearch()" placeholder="プロジェクト、地域、名前で検索" class="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500">
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
-        <!-- Hero Section -->
-        <section class="text-center py-10 px-4 mb-8 bg-gradient-to-b from-slate-800/50 to-transparent rounded-3xl border border-slate-800">
-            <span class="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold rounded-full mb-4">
-                🚀 世界へ挑むすべての人へ
-            </span>
-            <h2 class="text-3xl sm:text-5xl font-black mb-4 tracking-tight leading-tight">
-                あなたの「挑戦」を共有し、<br class="hidden sm:block">
-                <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">世界中の仲間</span>と繋がろう
-            </h2>
-            <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto mb-6">
-                起業・留学・個人プロジェクト・仲間募集。Globizは熱量を持ったチャレンジャーが集まり、互いに応援し合うグローバルコミュニティです。
-            </p>
-        </section>
-
-        <!-- Categories Filter -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
-            <button onclick="filterCategory('all')" id="btn-all" class="filter-btn active px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white border border-blue-500/50 transition">すべて</button>
-            <button onclick="filterCategory('起業')" id="btn-起業" class="filter-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700 transition">起業・ビジネス</button>
-            <button onclick="filterCategory('留学')" id="btn-留学" class="filter-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700 transition">留学・海外生活</button>
-            <button onclick="filterCategory('プロジェクト')" id="btn-プロジェクト" class="filter-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700 transition">プロジェクト・開発</button>
-        </div>
-
-        <!-- Projects Grid -->
-        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Dynamic Cards inserted here by JS -->
+        <div id="posts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamic Post Cards -->
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-800 bg-slate-950/50 py-6 text-center text-xs text-slate-500">
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-600">
         <p>© 2026 Globiz Inc. All rights reserved.</p>
     </footer>
 
-    <!-- New Post Modal -->
-    <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">新しい挑戦を投稿する</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <!-- 1. Post Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative my-8 my-auto">
+            <button onclick="closeDetailModal()" class="absolute right-5 top-5 text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- 2. Post Form Modal -->
+    <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl relative my-8">
+            <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-orange-500"></i> 挑戦を掲載する
+                </h3>
+                <button onclick="closePostModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <form onsubmit="submitPost(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">カテゴリー</label>
-                    <select id="post-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        <option value="起業">起業・ビジネス</option>
-                        <option value="留学">留学・海外生活</option>
-                        <option value="プロジェクト">プロジェクト・開発</option>
-                    </select>
+            
+            <form onsubmit="savePost(event)" class="space-y-4 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-400 mb-1">掲載目的（タイプ）</label>
+                        <select id="form-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                            <option value="クラファン">クラファン</option>
+                            <option value="求人・募集">求人・募集</option>
+                            <option value="企業説明">企業説明</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-400 mb-1">現在のフェーズ</label>
+                        <select id="form-stage" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                            <option value="準備中・構想中">準備中・構想中</option>
+                            <option value="クラファン実施中" selected>クラファン実施中</option>
+                            <option value="メンバー・採用募集中">メンバー・採用募集中</option>
+                            <option value="事業拡大中">事業拡大中</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">タイトル</label>
-                    <input type="text" id="post-title" required placeholder="例：ヨーロッパ向けの日本酒専門ECプラットフォームを立ち上げたい" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-400 mb-1">拠点国</label>
+                        <select id="form-country" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                            <option value="JP">🇯🇵 日本 (Japan)</option>
+                            <option value="DE">🇩🇪 ドイツ (Germany)</option>
+                            <option value="PH">🇵🇭 フィリピン (Philippines)</option>
+                            <option value="US">🇺🇸 アメリカ (USA)</option>
+                            <option value="GB">🇬🇧 イギリス (UK)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-400 mb-1">都市・地域</label>
+                        <input type="text" id="form-city" placeholder="例: フランクフルト, 渋谷区" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">詳細内容</label>
-                    <textarea id="post-desc" rows="4" required placeholder="あなたのプロジェクトの目的、解決したい課題、現在探している仲間について書いてみましょう" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
+                    <label class="block font-semibold text-slate-400 mb-1">表示名 / 企業名</label>
+                    <input type="text" id="form-author" required placeholder="例: 山口功夢 / 株式会社Globiz" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition">公開する</button>
+
+                <div>
+                    <label class="block font-semibold text-slate-400 mb-1">タイトル・キャッチコピー</label>
+                    <input type="text" id="form-title" required placeholder="例: ドイツでの和食Pop-upイベント開催クラファン！" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-400 mb-1">ストーリー・詳細説明</label>
+                    <textarea id="form-desc" rows="4" required placeholder="【ビジョン】なぜこの挑戦をするのか&#10;【求める支援・人材】クラファン支援、創業メンバーなど" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-400 mb-1">クラファンURL / 連絡先リンク（任意）</label>
+                    <input type="url" id="form-link" placeholder="https://camp-fire.jp/... など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-300">
+                    <p class="font-bold mb-0.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 注意事項</p>
+                    <p class="text-amber-300/80">詐欺、なりすまし、違法な求人・資金調達、公序良俗に反する不適切な投稿は禁止されています。</p>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-orange-500/20 text-sm">
+                    掲載する
+                </button>
             </form>
         </div>
     </div>
 
+    <!-- 3. MyPage Modal -->
+    <div id="mypage-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+            <button onclick="closeMyPage()" class="absolute right-5 top-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center text-orange-400 text-3xl font-bold mx-auto mb-3">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-100">マイページ</h3>
+                <p class="text-xs text-slate-400">山口 功夢</p>
+            </div>
+
+            <div class="space-y-3 mb-6 text-xs">
+                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
+                    <span class="text-emerald-400 font-bold">利用可能（1回）</span>
+                </div>
+                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-rotate text-blue-400 mr-2"></i>サブスク当月残り</span>
+                    <span class="text-slate-400 font-bold">0 回</span>
+                </div>
+                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
+                    <span class="text-amber-400 font-bold">0 枚</span>
+                </div>
+            </div>
+
+            <button onclick="alert('iOSアプリと同様に各種チケット購入や決済機能の追加が可能です。')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs mb-2">
+                <i class="fa-solid fa-cart-shopping mr-1.5 text-orange-400"></i> 掲載チケットを購入する
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
     <script>
-        const initialProjects = [
-            { id: 1, title: "フランクフルトで日本食文化を伝えるPop-upイベントを開催したい", category: "起業", author: "Isamu", desc: "ドイツ・フランクフルトで現地の方向けに本格和食と日本酒体験イベントを企画中。デザイナーとマーケター募集中！", cheers: 42 },
-            { id: 2, title: "SwiftUIを使った学習留学プラットフォームアプリ開発", category: "プロジェクト", author: "DevTeam", desc: "iOS向けコミュニティアプリの開発プロジェクト。App Store公開に向けてエンジニア仲間を探しています。", cheers: 28 },
-            { id: 3, title: "フィリピン留学＆現地インターン生活のリアル発信", category: "留学", author: "Yuki", desc: "語学学校での体験談から現地企業でのインターン獲得までのプロセスをnoteとSNSで発信しています！", cheers: 19 }
+        const flagMap = { JP: '🇯🇵', DE: '🇩🇪', PH: '🇵🇭', US: '🇺🇸', GB: '🇬🇧' };
+        const countryNameMap = { JP: '日本', DE: 'ドイツ', PH: 'フィリピン', US: 'アメリカ', GB: 'イギリス' };
+
+        // Sample State (In production, synchronized with Firebase Firestore)
+        let posts = [
+            {
+                id: "1",
+                authorName: "山口 功夢 / 和食プロジェクト",
+                countryCode: "DE",
+                city: "フランクフルト",
+                category: "クラファン",
+                projectStage: "クラファン実施中",
+                title: "ドイツ・フランクフルトで本格和食体験ポップアップイベントを開催！",
+                description: "フランクフルト現地にて日本の伝統的な食文化と日本酒の魅力を広めるポップアップイベントを開催します！現地でのパートナー企業様およびクラファン支援を募集しています。",
+                contactLink: "https://camp-fire.jp/",
+                supportCount: 38,
+                supported: false,
+                reviews: [
+                    { rating: 5, comment: "素晴らしい挑戦です！応援しています！", date: "2026/10/12" },
+                    { rating: 5, comment: "ドイツでの展開楽しみにしています。", date: "2026/10/13" }
+                ]
+            },
+            {
+                id: "2",
+                authorName: "Globiz Dev Team",
+                countryCode: "JP",
+                city: "東京都",
+                category: "求人・募集",
+                projectStage: "メンバー・採用募集中",
+                title: "SwiftUI & Firebaseで開発するグローバルコミュニティアプリの初期エンジニア募集",
+                description: "世界中のチャレンジャーを繋ぐプロダクトを一緒に構築しませんか？iOSアプリ（SwiftUI）およびWebアプリ（Tailwind/Firebase）開発を手伝ってくれるメンバーを募集中です！",
+                contactLink: "https://github.com/",
+                supportCount: 24,
+                supported: false,
+                reviews: []
+            },
+            {
+                id: "3",
+                authorName: "Yuki / 留学チャレンジャー",
+                countryCode: "PH",
+                city: "セブ",
+                category: "その他",
+                projectStage: "準備中・構想中",
+                title: "フィリピン語学留学から現地ITインターン挑戦へのリアルドキュメンタリー",
+                description: "英語力ゼロからスタートしたセブ島留学体験記と、現地スタートアップでのインターンシップ獲得プロセスを発信中。挑戦者のコミュニティを作りたいと考えています。",
+                contactLink: "",
+                supportCount: 15,
+                supported: false,
+                reviews: []
+            }
         ];
 
-        let projects = [...initialProjects];
+        let currentCategory = 'すべて';
+        let searchQuery = '';
 
-        function renderProjects(filter = 'all') {
+        function renderPosts() {
             const grid = document.getElementById('projects-grid');
             grid.innerHTML = '';
-            
-            const filtered = filter === 'all' ? projects : projects.filter(p => p.category === filter);
-            
+
+            const filtered = posts.filter(p => {
+                const matchCat = (currentCategory === 'すべて') || (p.category === currentCategory);
+                const q = searchQuery.toLowerCase();
+                const matchSearch = !q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q) || p.city.toLowerCase().includes(q);
+                return matchCat && matchSearch;
+            });
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 text-center text-slate-500">
+                        <i class="fa-solid fa-rocket text-4xl mb-3 opacity-40"></i>
+                        <p class="text-sm">該当する挑戦・プロジェクトが見つかりませんでした</p>
+                    </div>`;
+                return;
+            }
+
             filtered.forEach(p => {
+                const locationText = p.city ? `${countryNameMap[p.countryCode] || p.countryCode} / ${p.city}` : countryNameMap[p.countryCode] || p.countryCode;
+                const flag = flagMap[p.countryCode] || '🌐';
+
                 grid.innerHTML += `
-                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 hover:border-slate-600 transition flex flex-col justify-between">
+                    <div class="bg-slate-900 border border-slate-800/90 rounded-3xl p-5 hover:border-slate-700 transition flex flex-col justify-between shadow-xl">
                         <div>
                             <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">${p.category}</span>
-                                <span class="text-xs text-slate-400"><i class="fa-regular fa-user mr-1"></i>${p.author}</span>
+                                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">${p.category}</span>
+                                <span class="text-[11px] font-medium text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-md">${p.projectStage}</span>
                             </div>
-                            <h3 class="font-bold text-base text-slate-100 mb-2 leading-snug">${p.title}</h3>
-                            <p class="text-slate-400 text-xs leading-relaxed mb-4">${p.desc}</p>
+
+                            <div class="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
+                                <span>${flag}</span>
+                                <span>${locationText}</span>
+                            </div>
+
+                            <h3 onclick="openDetailModal('${p.id}')" class="font-bold text-base text-slate-100 mb-2 leading-snug cursor-pointer hover:text-orange-400 transition">${p.title}</h3>
+                            <p class="text-slate-400 text-xs leading-relaxed mb-4 line-clamp-2">${p.description}</p>
                         </div>
-                        <div class="pt-3 border-t border-slate-700/50 flex justify-between items-center">
-                            <button onclick="cheer(${p.id})" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-blue-600 hover:text-white transition text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-heart text-red-400"></i> 応援 <span id="cheer-${p.id}">${p.cheers}</span>
+
+                        <div class="pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
+                            <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-user text-orange-500 text-sm"></i> ${p.authorName}
+                            </span>
+                            
+                            <button onclick="toggleSupport('${p.id}')" class="px-3 py-1.5 rounded-xl border ${p.supported ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'} transition font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-hands-clapping"></i> 応援 <span id="support-${p.id}">${p.supportCount}</span>
                             </button>
                         </div>
                     </div>
@@ -131,51 +300,123 @@
             });
         }
 
+        function toggleSupport(id) {
+            const p = posts.find(item => item.id === id);
+            if(p) {
+                p.supported = !p.supported;
+                p.supportCount += p.supported ? 1 : -1;
+                renderPosts();
+            }
+        }
+
         function filterCategory(cat) {
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-500', 'text-white');
                 btn.classList.add('bg-slate-800', 'text-slate-300');
             });
-            const activeBtn = document.getElementById(`btn-${cat}`);
-            if(activeBtn) {
-                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-                activeBtn.classList.add('bg-blue-600', 'text-white');
+            const active = document.getElementById(`cat-${cat}`);
+            if(active) {
+                active.classList.remove('bg-slate-800', 'text-slate-300');
+                active.classList.add('bg-orange-500', 'text-white');
             }
-            renderProjects(cat);
+            renderPosts();
         }
 
-        function cheer(id) {
-            const p = projects.find(item => item.id === id);
-            if(p) {
-                p.cheers++;
-                document.getElementById(`cheer-${id}`).innerText = p.cheers;
+        function handleSearch() {
+            searchQuery = document.getElementById('search-input').value;
+            renderPosts();
+        }
+
+        function openDetailModal(id) {
+            const p = posts.find(item => item.id === id);
+            if(!p) return;
+
+            const flag = flagMap[p.countryCode] || '🌐';
+            const locationText = p.city ? `${countryNameMap[p.countryCode]} / ${p.city}` : countryNameMap[p.countryCode];
+
+            let reviewsHTML = p.reviews.map(r => `
+                <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 mb-2 text-xs">
+                    <div class="flex justify-between text-amber-400 mb-1">
+                        <span>${'★'.repeat(r.rating)}</span>
+                        <span class="text-slate-500 text-[10px]">${r.date}</span>
+                    </div>
+                    <p class="text-slate-300">${r.comment}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('detail-content').innerHTML = `
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">${p.category}</span>
+                    <span class="text-xs font-medium text-slate-400 bg-slate-800 px-2.5 py-1 rounded-md">${p.projectStage}</span>
+                    <span class="ml-auto text-xs text-slate-400">${flag} ${locationText}</span>
+                </div>
+                <h2 class="text-xl font-bold text-slate-100 mb-3">${p.title}</h2>
+                <div class="flex items-center gap-2 text-xs text-orange-400 font-semibold mb-4 bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                    <i class="fa-solid fa-circle-user text-base"></i>
+                    <span>掲載元: ${p.authorName}</span>
+                </div>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6 whitespace-pre-line">${p.description}</p>
+                
+                ${p.contactLink ? `
+                    <a href="${p.contactLink}" target="_blank" class="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-orange-500/25 text-xs mb-6">
+                        <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> 公式ページ / クラファンを閲覧・支援
+                    </a>
+                ` : ''}
+
+                <div class="border-t border-slate-800 pt-4">
+                    <h4 class="font-bold text-sm text-slate-200 mb-3 flex justify-between items-center">
+                        <span>応援メッセージ・評価</span>
+                        <button onclick="addReviewPrompt('${p.id}')" class="text-xs text-orange-400 font-semibold"><i class="fa-solid fa-comment-dots mr-1"></i>メッセージを送る</button>
+                    </h4>
+                    <div id="reviews-list">${reviewsHTML || '<p class="text-xs text-slate-500">まだメッセージはありません。</p>'}</div>
+                </div>
+            `;
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function addReviewPrompt(postId) {
+            const comment = prompt("応援メッセージを入力してください:");
+            if(comment) {
+                const p = posts.find(item => item.id === postId);
+                if(p) {
+                    p.reviews.unshift({ rating: 5, comment, date: new Date().toLocaleDateString() });
+                    openDetailModal(postId);
+                }
             }
         }
 
-        function openModal() { document.getElementById('post-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('post-modal').classList.add('hidden'); }
+        function closeDetailModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+        function openPostModal() { document.getElementById('post-modal').classList.remove('hidden'); }
+        function closePostModal() { document.getElementById('post-modal').classList.add('hidden'); }
+        function openMyPage() { document.getElementById('mypage-modal').classList.remove('hidden'); }
+        function closeMyPage() { document.getElementById('mypage-modal').classList.add('hidden'); }
 
-        function submitPost(e) {
+        function savePost(e) {
             e.preventDefault();
-            const title = document.getElementById('post-title').value;
-            const desc = document.getElementById('post-desc').value;
-            const category = document.getElementById('post-category').value;
+            const newPost = {
+                id: Date.now().toString(),
+                category: document.getElementById('form-category').value,
+                projectStage: document.getElementById('form-stage').value,
+                countryCode: document.getElementById('form-country').value,
+                city: document.getElementById('form-city').value,
+                authorName: document.getElementById('form-author').value,
+                title: document.getElementById('form-title').value,
+                description: document.getElementById('form-desc').value,
+                contactLink: document.getElementById('form-link').value,
+                supportCount: 0,
+                supported: false,
+                reviews: []
+            };
 
-            projects.unshift({
-                id: Date.now(),
-                title,
-                desc,
-                category,
-                author: "あなた",
-                cheers: 1
-            });
-
-            closeModal();
-            renderProjects('all');
+            posts.unshift(newPost);
+            closePostModal();
+            renderPosts();
             e.target.reset();
         }
 
-        renderProjects();
+        renderPosts();
     </script>
 </body>
 </html>
