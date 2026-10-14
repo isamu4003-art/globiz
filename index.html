@@ -75,19 +75,19 @@
 
     <!-- ==================== モーダルエリア ==================== -->
 
-    <!-- 1. 「挑戦を投稿」モーダル -->
+    <!-- 1. 「挑戦を投稿・編集」モーダル -->
     <div id="post-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
 
-            <h3 class="text-base font-bold text-white mb-4 flex items-center">
+            <h3 id="modal-title-text" class="text-base font-bold text-white mb-4 flex items-center">
                 <i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿
             </h3>
 
             <!-- 残枠ステータス -->
-            <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
+            <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
                     <span class="text-emerald-400 font-bold">利用可能（1回）</span>
@@ -122,6 +122,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">メイン画像（1枚・任意）</label>
                     <input type="file" id="post-image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-orange-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-800 rounded-xl">
+                    <p id="edit-image-notice" class="text-[10px] text-slate-500 mt-1 hidden">※新しい画像を選択しない場合は元の画像が維持されます</p>
                 </div>
 
                 <div>
@@ -138,7 +139,7 @@
             </form>
 
             <!-- Stripe チケット追加購入ボタン -->
-            <div class="mt-6 pt-5 border-t border-slate-800 space-y-2">
+            <div id="post-stripe-section" class="mt-6 pt-5 border-t border-slate-800 space-y-2">
                 <p class="text-[11px] text-slate-400 text-center mb-2 font-medium">💡 掲載枠を追加・購入する場合はこちら</p>
                 <a href="https://buy.stripe.com/8x26oIbba5hq1VkbUlcV201" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs">
                     <i class="fa-solid fa-ticket mr-1.5 text-amber-400"></i> 単発掲載チケットを購入（¥5,000）
@@ -194,7 +195,7 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             
-            <!-- 改善版: 全体表示用画像エリア (object-containでカット防止) -->
+            <!-- 全体表示用画像エリア -->
             <div id="detail-image-container" class="mb-4 hidden bg-slate-950/60 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center max-h-80">
                 <img id="detail-image" src="" class="w-full max-h-80 object-contain">
             </div>
@@ -215,13 +216,17 @@
                 </a>
             </div>
 
-            <!-- フッター操作エリア（応援ボタン ＋ 削除ボタン） -->
+            <!-- フッター操作エリア（応援 / 編集 / 削除） -->
             <div class="flex justify-between items-center pt-4 border-t border-slate-800">
                 <button onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-orange-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-heart"></i>
                     <span>応援する (<span id="detail-cheers">0</span>)</span>
                 </button>
                 <div class="flex items-center space-x-2">
+                    <button id="edit-btn" onclick="openEditModal()" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs transition hidden flex items-center space-x-1">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>編集</span>
+                    </button>
                     <button id="delete-btn" onclick="deletePost()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs transition hidden flex items-center space-x-1">
                         <i class="fa-solid fa-trash-can"></i>
                         <span>削除</span>
@@ -273,6 +278,7 @@
         let postsList = [];
         let currentFilter = 'all';
         let activePostId = null;
+        let editingPostId = null; // 編集モード用の投稿ID管理
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
@@ -330,7 +336,6 @@
                     summaryText = post.details?.business || post.details?.overview || '';
                 }
 
-                // カードサムネイル（右側に綺麗に1/5サイズ配置）
                 const thumbHtml = post.imageUrl ? `
                     <div class="w-1/5 flex-shrink-0 ml-3">
                         <img src="${post.imageUrl}" class="w-full h-16 object-cover rounded-xl border border-slate-800">
@@ -425,29 +430,19 @@
             }
         };
 
-        // 投稿処理
+        // 新規投稿 / 編集保存処理
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
-            submitBtn.innerText = "画像アップロード中...";
+            submitBtn.innerText = "処理中...";
 
             const cat = document.getElementById('post-category').value;
             const title = document.getElementById('post-title').value;
             const url = document.getElementById('post-url').value;
             const imageFile = document.getElementById('post-image').files[0];
 
-            let imageUrl = '';
-
             try {
-                if (imageFile) {
-                    const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
-                    await uploadBytes(storageRef, imageFile);
-                    imageUrl = await getDownloadURL(storageRef);
-                }
-
-                submitBtn.innerText = "データ保存中...";
-
                 let detailsObj = {};
                 if (cat === 'クラファン') {
                     detailsObj = {
@@ -471,32 +466,107 @@
                     };
                 }
 
-                await addDoc(collection(db, "posts"), {
-                    title: title,
-                    category: cat,
-                    author: "山口 功夢",
-                    url: url,
-                    imageUrl: imageUrl,
-                    cheers: 0,
-                    date: new Date().toLocaleDateString('ja-JP'),
-                    createdAt: Date.now(),
-                    details: detailsObj
-                });
+                if (editingPostId) {
+                    // 編集モードの処理
+                    const postRef = doc(db, "posts", editingPostId);
+                    const updateData = {
+                        title: title,
+                        category: cat,
+                        url: url,
+                        details: detailsObj
+                    };
+
+                    // 新しい画像が選択された場合のみ更新
+                    if (imageFile) {
+                        submitBtn.innerText = "画像アップロード中...";
+                        const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
+                        await uploadBytes(storageRef, imageFile);
+                        updateData.imageUrl = await getDownloadURL(storageRef);
+                    }
+
+                    await updateDoc(postRef, updateData);
+                    alert('投稿を更新しました！');
+                } else {
+                    // 新規投稿の処理
+                    let imageUrl = '';
+                    if (imageFile) {
+                        submitBtn.innerText = "画像アップロード中...";
+                        const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
+                        await uploadBytes(storageRef, imageFile);
+                        imageUrl = await getDownloadURL(storageRef);
+                    }
+
+                    await addDoc(collection(db, "posts"), {
+                        title: title,
+                        category: cat,
+                        author: "山口 功夢",
+                        url: url,
+                        imageUrl: imageUrl,
+                        cheers: 0,
+                        date: new Date().toLocaleDateString('ja-JP'),
+                        createdAt: Date.now(),
+                        details: detailsObj
+                    });
+                    alert('投稿が完了しました！');
+                }
 
                 closePostModal();
                 document.getElementById('post-form').reset();
+                editingPostId = null;
                 onCategoryChange();
-                alert('投稿が完了しました！');
             } catch (error) {
-                console.error("Error adding document or image: ", error);
-                alert('投稿エラーが発生しました。Firebase Storageの設定をご確認ください。');
+                console.error("Error saving document: ", error);
+                alert('保存エラーが発生しました。もう一度お試しください。');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "無料掲載枠（1回分）を消費して投稿する";
             }
         });
 
-        // 応援ボタンカウントアップ
+        // 編集モーダルを開く
+        window.openEditModal = function() {
+            if (!activePostId) return;
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post) return;
+
+            editingPostId = activePostId;
+
+            // UIの切り替え（タイトルとボタン・Stripe枠非表示）
+            document.getElementById('modal-title-text').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i>投稿を編集`;
+            document.getElementById('submit-btn').innerText = "変更内容を保存する";
+            document.getElementById('post-quota-status').classList.add('hidden');
+            document.getElementById('post-stripe-section').classList.add('hidden');
+            document.getElementById('edit-image-notice').classList.remove('hidden');
+
+            // 既存データのセット
+            document.getElementById('post-category').value = post.category;
+            onCategoryChange();
+
+            document.getElementById('post-title').value = post.title || '';
+            document.getElementById('post-url').value = post.url || '';
+
+            const details = post.details || {};
+            if (post.category === 'クラファン') {
+                if (document.getElementById('cf-target')) document.getElementById('cf-target').value = details.targetAmount || '';
+                if (document.getElementById('cf-use')) document.getElementById('cf-use').value = details.useOfFunds || '';
+                if (document.getElementById('cf-next')) document.getElementById('cf-next').value = details.nextGoal || '';
+                if (document.getElementById('cf-overview')) document.getElementById('cf-overview').value = details.overview || '';
+            } else if (post.category === '求人・募集') {
+                if (document.getElementById('job-role')) document.getElementById('job-role').value = details.role || '';
+                if (document.getElementById('job-type')) document.getElementById('job-type').value = details.workType || '';
+                if (document.getElementById('job-skills')) document.getElementById('job-skills').value = details.skills || '';
+                if (document.getElementById('job-overview')) document.getElementById('job-overview').value = details.overview || '';
+            } else {
+                if (document.getElementById('biz-business')) document.getElementById('biz-business').value = details.business || '';
+                if (document.getElementById('biz-vision')) document.getElementById('biz-vision').value = details.vision || '';
+                if (document.getElementById('biz-overview')) document.getElementById('biz-overview').value = details.overview || '';
+            }
+
+            closeDetailModal();
+            document.getElementById('post-modal').classList.remove('hidden');
+        };
+
+        // 応援処理
         window.cheerPost = async function() {
             if (!activePostId) return;
             try {
@@ -511,7 +581,7 @@
             }
         };
 
-        // 投稿の削除機能
+        // 削除処理
         window.deletePost = async function() {
             if (!activePostId) return;
             if (!confirm('この投稿を本当に削除しますか？')) return;
@@ -522,7 +592,7 @@
                 alert('投稿を削除しました。');
             } catch (error) {
                 console.error("Error deleting post: ", error);
-                alert('削除権限がないか、エラーが発生しました。');
+                alert('削除処理でエラーが発生しました。');
             }
         };
 
@@ -542,8 +612,23 @@
 
         window.searchPosts = function() { renderPosts(); };
 
-        window.openPostModal = function() { document.getElementById('post-modal').classList.remove('hidden'); };
-        window.closePostModal = function() { document.getElementById('post-modal').classList.add('hidden'); };
+        window.openPostModal = function() {
+            editingPostId = null;
+            document.getElementById('modal-title-text').innerHTML = `<i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿`;
+            document.getElementById('submit-btn').innerText = "無料掲載枠（1回分）を消費して投稿する";
+            document.getElementById('post-quota-status').classList.remove('hidden');
+            document.getElementById('post-stripe-section').classList.remove('hidden');
+            document.getElementById('edit-image-notice').classList.add('hidden');
+            document.getElementById('post-form').reset();
+            onCategoryChange();
+            document.getElementById('post-modal').classList.remove('hidden');
+        };
+
+        window.closePostModal = function() {
+            editingPostId = null;
+            document.getElementById('post-modal').classList.add('hidden');
+        };
+
         window.openMypageModal = function() { document.getElementById('mypage-modal').classList.remove('hidden'); };
         window.closeMypageModal = function() { document.getElementById('mypage-modal').classList.add('hidden'); };
 
@@ -552,15 +637,17 @@
             if (!post) return;
             activePostId = id;
 
-            // 自分の投稿（山口 功夢）であれば削除ボタンを表示
+            // 自分の投稿（山口 功夢）であれば編集・削除ボタンを表示
+            const editBtn = document.getElementById('edit-btn');
             const deleteBtn = document.getElementById('delete-btn');
             if (post.author === "山口 功夢") {
+                editBtn.classList.remove('hidden');
                 deleteBtn.classList.remove('hidden');
             } else {
+                editBtn.classList.add('hidden');
                 deleteBtn.classList.add('hidden');
             }
 
-            // 画像の全体表示処理（全体が収まるように設定）
             const imgContainer = document.getElementById('detail-image-container');
             const imgElem = document.getElementById('detail-image');
             if (post.imageUrl && post.imageUrl.trim() !== '') {
