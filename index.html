@@ -315,9 +315,10 @@
 
             <!-- フッター操作エリア -->
             <div class="flex justify-between items-center pt-4 border-t border-slate-800">
-                <button onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-orange-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
-                    <i class="fa-solid fa-heart"></i>
-                    <span>応援する (<span id="detail-cheers">0</span>)</span>
+                <!-- いいね（応援）ボタン（トグル制御対応） -->
+                <button id="cheer-btn" onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
+                    <i id="cheer-icon" class="fa-solid fa-heart text-slate-500"></i>
+                    <span id="cheer-btn-text">応援する</span> (<span id="detail-cheers">0</span>)
                 </button>
                 <div class="flex items-center space-x-2">
                     <button id="edit-btn" onclick="openEditModal()" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs transition hidden flex items-center space-x-1">
@@ -369,6 +370,7 @@
             deleteDoc, 
             increment, 
             arrayUnion,
+            arrayRemove,
             query, 
             orderBy 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
@@ -441,7 +443,6 @@
                 if (userSnap.exists()) {
                     userProfileData = userSnap.data();
                 } else {
-                    // 初回ログイン時はアカウント情報からプロフを作成
                     userProfileData = {
                         displayName: defaultAuthUser.displayName || "山口 功夢",
                         email: defaultAuthUser.email || "",
@@ -649,6 +650,9 @@
                     </div>
                 ` : '';
 
+                const isLikedByMe = currentUser && (post.likedUids || []).includes(currentUser.uid);
+                const heartIconClass = isLikedByMe ? "fa-solid fa-heart text-red-500" : "fa-solid fa-heart text-slate-500";
+
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-3">
@@ -669,7 +673,7 @@
                     </div>
                     <div class="flex justify-between items-center pt-3 mt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
                         <span><i class="fa-solid fa-user mr-1 text-slate-500"></i>${post.author || '匿名'}</span>
-                        <span class="text-orange-400 font-semibold"><i class="fa-solid fa-heart mr-1"></i>${post.cheers || 0}</span>
+                        <span class="font-semibold flex items-center space-x-1"><i class="${heartIconClass}"></i><span>${post.cheers || 0}</span></span>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -817,6 +821,7 @@
                         url: url,
                         imageUrl: imageUrl,
                         cheers: 0,
+                        likedUids: [],
                         comments: [],
                         date: new Date().toLocaleDateString('ja-JP'),
                         createdAt: Date.now(),
@@ -936,7 +941,7 @@
             if (!post) return;
             activePostId = id;
 
-            // ログインユーザー自身が作成した投稿の場合のみ「編集・削除」を表示
+            // 編集・削除ボタン制御
             const editBtn = document.getElementById('edit-btn');
             const deleteBtn = document.getElementById('delete-btn');
             if (currentUser && (post.uid === currentUser.uid || post.author === currentUser.displayName || post.author === "山口 功夢")) {
@@ -960,6 +965,23 @@
             document.getElementById('detail-title').innerText = post.title;
             document.getElementById('detail-author').innerText = `投稿者: ${post.author || '匿名'} (${post.date || ''})`;
             document.getElementById('detail-cheers').innerText = post.cheers || 0;
+
+            // いいねボタンの状態更新（赤色ハート & テキスト切替）
+            const cheerBtn = document.getElementById('cheer-btn');
+            const cheerIcon = document.getElementById('cheer-icon');
+            const cheerBtnText = document.getElementById('cheer-btn-text');
+            const likedUids = post.likedUids || [];
+            const isLiked = currentUser && likedUids.includes(currentUser.uid);
+
+            if (isLiked) {
+                cheerIcon.className = "fa-solid fa-heart text-red-500";
+                cheerBtnText.innerText = "応援済み";
+                cheerBtn.classList.add('border-red-500/40', 'bg-red-500/10');
+            } else {
+                cheerIcon.className = "fa-solid fa-heart text-slate-500";
+                cheerBtnText.innerText = "応援する";
+                cheerBtn.classList.remove('border-red-500/40', 'bg-red-500/10');
+            }
 
             const container = document.getElementById('detail-dynamic-content');
             container.innerHTML = '';
@@ -1037,11 +1059,39 @@
             document.getElementById('detail-modal').classList.add('hidden');
         };
 
+        // 1アカウント1回制限対応のいいね（応援）処理
         window.cheerPost = async function() {
             if (!activePostId) return;
+            if (!currentUser) {
+                alert('応援（いいね）するにはGoogleログインが必要です');
+                loginWithGoogle();
+                return;
+            }
+
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post) return;
+
+            const postRef = doc(db, "posts", activePostId);
+            const likedUids = post.likedUids || [];
+            const uid = currentUser.uid;
+
             try {
-                await updateDoc(doc(db, "posts", activePostId), { cheers: increment(1) });
-            } catch (e) { console.error(e); }
+                if (likedUids.includes(uid)) {
+                    // 既にいいね済み ➔ 解除 (-1)
+                    await updateDoc(postRef, {
+                        cheers: increment(-1),
+                        likedUids: arrayRemove(uid)
+                    });
+                } else {
+                    // 未いいね ➔ 追加 (+1)
+                    await updateDoc(postRef, {
+                        cheers: increment(1),
+                        likedUids: arrayUnion(uid)
+                    });
+                }
+            } catch (e) {
+                console.error("Cheer Update Error:", e);
+            }
         };
 
         window.deletePost = async function() {
