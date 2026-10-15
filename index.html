@@ -190,7 +190,7 @@
 
     <!-- 3. 記事詳細 モーダル -->
     <div id="detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition z-10">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -202,6 +202,7 @@
 
             <div class="flex items-center space-x-2 mb-3">
                 <span id="detail-category" class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[11px] font-bold px-2.5 py-1 rounded-lg">カテゴリ</span>
+                <span id="detail-days-badge" class="bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg hidden">残り 0日</span>
             </div>
 
             <h3 id="detail-title" class="text-lg font-bold text-white mb-2">タイトル</h3>
@@ -214,6 +215,29 @@
                 <a id="detail-url-btn" href="#" target="_blank" class="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
                     <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
                 </a>
+            </div>
+
+            <!-- 4. サポーター＆応援メッセージセクション -->
+            <div id="supporters-section" class="mb-6 pt-4 border-t border-slate-800">
+                <h4 class="text-xs font-bold text-slate-200 mb-3 flex items-center">
+                    <i class="fa-solid fa-users text-orange-400 mr-1.5"></i> サポーターからの応援メッセージ (<span id="comments-count">0</span>)
+                </h4>
+                
+                <!-- メッセージ送信フォーム -->
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60 mb-4 space-y-2">
+                    <div class="flex gap-2">
+                        <input type="text" id="supporter-name" placeholder="お名前（任意）" class="w-1/3 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        <input type="text" id="supporter-msg" placeholder="応援メッセージを入力..." class="w-2/3 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    <button onclick="addSupporterComment()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-1.5 rounded-lg text-xs transition">
+                        メッセージを送る
+                    </button>
+                </div>
+
+                <!-- メッセージリスト -->
+                <div id="comments-list" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-[11px] text-slate-500 text-center py-2">まだメッセージはありません</p>
+                </div>
             </div>
 
             <!-- フッター操作エリア（応援 / 編集 / 削除） -->
@@ -250,6 +274,7 @@
             updateDoc, 
             deleteDoc, 
             increment, 
+            arrayUnion,
             query, 
             orderBy 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
@@ -278,7 +303,7 @@
         let postsList = [];
         let currentFilter = 'all';
         let activePostId = null;
-        let editingPostId = null; // 編集モード用の投稿ID管理
+        let editingPostId = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
@@ -294,10 +319,31 @@
                     postsList.push({ id: doc.id, ...doc.data() });
                 });
                 renderPosts();
+                if (activePostId) {
+                    // 詳細表示中に更新があれば再描画
+                    openDetailModal(activePostId);
+                }
             }, (error) => {
                 console.error("Firestore error:", error);
                 document.getElementById('posts-grid').innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">データの読み込みに失敗しました</div>`;
             });
+        }
+
+        // 残り日数の計算ヘルパー
+        function getRemainingDays(endDateStr) {
+            if (!endDateStr) return null;
+            const end = new Date(endDateStr);
+            const now = new Date();
+            const diffTime = end - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 0 ? diffDays : 0;
+        }
+
+        // 数値カンマ区切りヘルパー
+        function formatMoney(val) {
+            if (!val) return '0';
+            const num = parseInt(val.toString().replace(/[^0-9]/g, ''));
+            return isNaN(num) ? '0' : num.toLocaleString();
         }
 
         // 記事一覧表示
@@ -325,10 +371,32 @@
 
                 let subBadge = '';
                 let summaryText = '';
+                let cfProgressBar = '';
 
                 if (post.category === 'クラファン') {
-                    subBadge = `<span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-bullseye mr-1"></i>目標: ${post.details?.targetAmount || '-'}</span>`;
+                    const targetNum = parseInt((post.details?.targetAmount || '0').replace(/[^0-9]/g, '')) || 1;
+                    const currentNum = parseInt((post.details?.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
+                    const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
+                    
+                    const remainingDays = getRemainingDays(post.details?.endDate);
+                    const daysBadge = remainingDays !== null ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-clock mr-1"></i>あと${remainingDays}日</span>` : '';
+
+                    subBadge = `<span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-chart-line mr-1"></i>${percent}%達成</span>${daysBadge}`;
+                    
                     summaryText = post.details?.useOfFunds || post.details?.overview || '';
+
+                    // 1. 進捗メーター
+                    cfProgressBar = `
+                        <div class="mt-3 pt-3 border-t border-slate-800/60">
+                            <div class="flex justify-between text-[11px] font-bold mb-1">
+                                <span class="text-amber-400">¥${formatMoney(currentNum)}</span>
+                                <span class="text-slate-500">目標: ¥${formatMoney(targetNum)}</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-gradient-to-r from-orange-500 to-amber-400 h-1.5 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
+                            </div>
+                        </div>
+                    `;
                 } else if (post.category === '求人・募集') {
                     subBadge = `<span class="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md ml-2"><i class="fa-solid fa-briefcase mr-1"></i>${post.details?.role || '募集'}</span>`;
                     summaryText = `【形態】${post.details?.workType || '-'}\n${post.details?.overview || ''}`;
@@ -352,15 +420,16 @@
                             <span class="text-[10px] text-slate-500">${post.date || ''}</span>
                         </div>
                         
-                        <div class="flex justify-between items-start mb-4">
+                        <div class="flex justify-between items-start mb-2">
                             <div class="flex-grow">
                                 <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
                                 <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed whitespace-pre-wrap">${summaryText}</p>
                             </div>
                             ${thumbHtml}
                         </div>
+                        ${cfProgressBar}
                     </div>
-                    <div class="flex justify-between items-center pt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
+                    <div class="flex justify-between items-center pt-3 mt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
                         <span><i class="fa-solid fa-user mr-1 text-slate-500"></i>${post.author || '匿名'}</span>
                         <span class="text-orange-400 font-semibold"><i class="fa-solid fa-heart mr-1"></i>${post.cheers || 0}</span>
                     </div>
@@ -376,21 +445,42 @@
 
             if (cat === 'クラファン') {
                 container.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">目標金額（円） <span class="text-orange-500">*</span></label>
+                            <input type="number" id="cf-target" required placeholder="1000000" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">現在の集まった額（円）</label>
+                            <input type="number" id="cf-current" placeholder="0" value="0" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        </div>
+                    </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">目標金額 <span class="text-orange-500">*</span></label>
-                        <input type="text" id="cf-target" required placeholder="例: 1,000,000円" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集終了日（カウントダウン用）</label>
+                        <input type="date" id="cf-enddate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">資金の使い道 <span class="text-orange-500">*</span></label>
-                        <textarea id="cf-use" rows="3" required placeholder="集まった資金をどのように活用するか記載してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                        <textarea id="cf-use" rows="2" required placeholder="集まった資金の使い道を記載" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
+
+                    <!-- 2. リターン設定エリア -->
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60 space-y-2">
+                        <label class="block text-xs font-bold text-amber-400 mb-1"><i class="fa-solid fa-gift mr-1"></i>リターン（返礼品）の設定</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="cf-return-price" placeholder="支援額(円)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                            <input type="text" id="cf-return-title" placeholder="リターン名" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        </div>
+                        <textarea id="cf-return-desc" rows="2" placeholder="リターンの詳細内容やお届け予定" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></textarea>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">目標達成後の使い道・ネクストゴール（任意）</label>
-                        <textarea id="cf-next" rows="2" placeholder="目標金額を超えた場合の追加の挑戦や使い道" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                        <textarea id="cf-next" rows="2" placeholder="目標金額を超えた場合の追加挑戦" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">プロジェクトの想い・概要</label>
-                        <textarea id="cf-overview" rows="3" placeholder="挑戦の背景や熱意を自由に記載してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                        <textarea id="cf-overview" rows="2" placeholder="挑戦の背景や熱意" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                 `;
             } else if (cat === '求人・募集') {
@@ -447,9 +537,14 @@
                 if (cat === 'クラファン') {
                     detailsObj = {
                         targetAmount: document.getElementById('cf-target').value,
+                        currentAmount: document.getElementById('cf-current').value || '0',
+                        endDate: document.getElementById('cf-enddate').value,
                         useOfFunds: document.getElementById('cf-use').value,
                         nextGoal: document.getElementById('cf-next').value,
-                        overview: document.getElementById('cf-overview').value
+                        overview: document.getElementById('cf-overview').value,
+                        returnPrice: document.getElementById('cf-return-price')?.value || '',
+                        returnTitle: document.getElementById('cf-return-title')?.value || '',
+                        returnDesc: document.getElementById('cf-return-desc')?.value || ''
                     };
                 } else if (cat === '求人・募集') {
                     detailsObj = {
@@ -467,7 +562,6 @@
                 }
 
                 if (editingPostId) {
-                    // 編集モードの処理
                     const postRef = doc(db, "posts", editingPostId);
                     const updateData = {
                         title: title,
@@ -476,7 +570,6 @@
                         details: detailsObj
                     };
 
-                    // 新しい画像が選択された場合のみ更新
                     if (imageFile) {
                         submitBtn.innerText = "画像アップロード中...";
                         const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
@@ -487,7 +580,6 @@
                     await updateDoc(postRef, updateData);
                     alert('投稿を更新しました！');
                 } else {
-                    // 新規投稿の処理
                     let imageUrl = '';
                     if (imageFile) {
                         submitBtn.innerText = "画像アップロード中...";
@@ -503,6 +595,7 @@
                         url: url,
                         imageUrl: imageUrl,
                         cheers: 0,
+                        comments: [],
                         date: new Date().toLocaleDateString('ja-JP'),
                         createdAt: Date.now(),
                         details: detailsObj
@@ -523,6 +616,37 @@
             }
         });
 
+        // 4. サポーターメッセージ追加機能
+        window.addSupporterComment = async function() {
+            if (!activePostId) return;
+            const nameInput = document.getElementById('supporter-name');
+            const msgInput = document.getElementById('supporter-msg');
+            const name = nameInput.value.trim() || '匿名サポーター';
+            const msg = msgInput.value.trim();
+
+            if (!msg) {
+                alert('メッセージを入力してください');
+                return;
+            }
+
+            try {
+                const postRef = doc(db, "posts", activePostId);
+                const commentData = {
+                    name: name,
+                    text: msg,
+                    date: new Date().toLocaleDateString('ja-JP') + ' ' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})
+                };
+
+                await updateDoc(postRef, {
+                    comments: arrayUnion(commentData)
+                });
+
+                msgInput.value = '';
+            } catch (error) {
+                console.error("Error adding comment: ", error);
+            }
+        };
+
         // 編集モーダルを開く
         window.openEditModal = function() {
             if (!activePostId) return;
@@ -531,14 +655,12 @@
 
             editingPostId = activePostId;
 
-            // UIの切り替え（タイトルとボタン・Stripe枠非表示）
             document.getElementById('modal-title-text').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i>投稿を編集`;
             document.getElementById('submit-btn').innerText = "変更内容を保存する";
             document.getElementById('post-quota-status').classList.add('hidden');
             document.getElementById('post-stripe-section').classList.add('hidden');
             document.getElementById('edit-image-notice').classList.remove('hidden');
 
-            // 既存データのセット
             document.getElementById('post-category').value = post.category;
             onCategoryChange();
 
@@ -548,9 +670,14 @@
             const details = post.details || {};
             if (post.category === 'クラファン') {
                 if (document.getElementById('cf-target')) document.getElementById('cf-target').value = details.targetAmount || '';
+                if (document.getElementById('cf-current')) document.getElementById('cf-current').value = details.currentAmount || '0';
+                if (document.getElementById('cf-enddate')) document.getElementById('cf-enddate').value = details.endDate || '';
                 if (document.getElementById('cf-use')) document.getElementById('cf-use').value = details.useOfFunds || '';
                 if (document.getElementById('cf-next')) document.getElementById('cf-next').value = details.nextGoal || '';
                 if (document.getElementById('cf-overview')) document.getElementById('cf-overview').value = details.overview || '';
+                if (document.getElementById('cf-return-price')) document.getElementById('cf-return-price').value = details.returnPrice || '';
+                if (document.getElementById('cf-return-title')) document.getElementById('cf-return-title').value = details.returnTitle || '';
+                if (document.getElementById('cf-return-desc')) document.getElementById('cf-return-desc').value = details.returnDesc || '';
             } else if (post.category === '求人・募集') {
                 if (document.getElementById('job-role')) document.getElementById('job-role').value = details.role || '';
                 if (document.getElementById('job-type')) document.getElementById('job-type').value = details.workType || '';
@@ -566,7 +693,6 @@
             document.getElementById('post-modal').classList.remove('hidden');
         };
 
-        // 応援処理
         window.cheerPost = async function() {
             if (!activePostId) return;
             try {
@@ -581,7 +707,6 @@
             }
         };
 
-        // 削除処理
         window.deletePost = async function() {
             if (!activePostId) return;
             if (!confirm('この投稿を本当に削除しますか？')) return;
@@ -637,7 +762,6 @@
             if (!post) return;
             activePostId = id;
 
-            // 自分の投稿（山口 功夢）であれば編集・削除ボタンを表示
             const editBtn = document.getElementById('edit-btn');
             const deleteBtn = document.getElementById('delete-btn');
             if (post.author === "山口 功夢") {
@@ -658,6 +782,17 @@
             }
 
             document.getElementById('detail-category').innerText = post.category;
+            
+            // 残り日数バッジ
+            const daysBadge = document.getElementById('detail-days-badge');
+            const remainingDays = getRemainingDays(post.details?.endDate);
+            if (post.category === 'クラファン' && remainingDays !== null) {
+                daysBadge.innerText = `残り ${remainingDays}日`;
+                daysBadge.classList.remove('hidden');
+            } else {
+                daysBadge.classList.add('hidden');
+            }
+
             document.getElementById('detail-title').innerText = post.title;
             document.getElementById('detail-author').innerText = `投稿者: ${post.author || '匿名'} (${post.date || ''})`;
             document.getElementById('detail-cheers').innerText = post.cheers || 0;
@@ -668,11 +803,41 @@
             const details = post.details || {};
 
             if (post.category === 'クラファン') {
-                container.innerHTML = `
-                    <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
-                        <p class="text-[11px] text-amber-400 font-bold mb-1"><i class="fa-solid fa-bullseye mr-1.5"></i>目標金額</p>
-                        <p class="text-base font-extrabold text-amber-300">${details.targetAmount || '-'}</p>
+                const targetNum = parseInt((details.targetAmount || '0').replace(/[^0-9]/g, '')) || 1;
+                const currentNum = parseInt((details.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
+                const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
+
+                const returnHtml = details.returnTitle ? `
+                    <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-4 rounded-xl">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-amber-400 font-bold text-xs"><i class="fa-solid fa-gift mr-1.5"></i>リターン（返礼品）</span>
+                            <span class="text-amber-300 font-black text-sm">¥${formatMoney(details.returnPrice)}</span>
+                        </div>
+                        <p class="text-xs font-bold text-white mb-1">${details.returnTitle}</p>
+                        <p class="text-[11px] text-slate-300 whitespace-pre-wrap">${details.returnDesc}</p>
                     </div>
+                ` : '';
+
+                container.innerHTML = `
+                    <!-- 1. 進捗メーター（詳細） -->
+                    <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl space-y-2">
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-[10px] text-slate-400">現在の支援総額</p>
+                                <p class="text-lg font-black text-amber-400">¥${formatMoney(currentNum)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] text-slate-400">目標額: ¥${formatMoney(targetNum)}</p>
+                                <p class="text-xs font-bold text-emerald-400">${percent}% 達成</p>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-orange-500 to-amber-400 h-2 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
+                        </div>
+                    </div>
+
+                    ${returnHtml}
+
                     <div>
                         <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-coins text-orange-400 mr-1.5"></i>資金の使い道</h4>
                         <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.useOfFunds || '-'}</div>
@@ -728,6 +893,29 @@
                 `;
             }
 
+            // 4. コメント・サポーター一覧表示
+            const comments = post.comments || [];
+            document.getElementById('comments-count').innerText = comments.length;
+            const commentsListElem = document.getElementById('comments-list');
+            
+            if (comments.length === 0) {
+                commentsListElem.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-2">まだメッセージはありません</p>`;
+            } else {
+                commentsListElem.innerHTML = '';
+                comments.slice().reverse().forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-800/40 border border-slate-800 p-2.5 rounded-lg text-xs";
+                    item.innerHTML = `
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                            <span class="font-bold text-slate-300"><i class="fa-solid fa-user-circle mr-1"></i>${c.name}</span>
+                            <span>${c.date}</span>
+                        </div>
+                        <p class="text-slate-200 leading-relaxed">${c.text}</p>
+                    `;
+                    commentsListElem.appendChild(item);
+                });
+            }
+
             const urlContainer = document.getElementById('detail-url-container');
             const urlBtn = document.getElementById('detail-url-btn');
             if (post.url && post.url.trim() !== "") {
@@ -741,6 +929,7 @@
         };
 
         window.closeDetailModal = function() {
+            activePostId = null;
             document.getElementById('detail-modal').classList.add('hidden');
         };
     </script>
