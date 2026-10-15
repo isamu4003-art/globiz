@@ -75,7 +75,7 @@
         </div>
     </main>
 
-    <!-- フッター（法的表記リンク集） -->
+    <!-- フッター -->
     <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 mt-12 space-y-3">
         <div class="flex justify-center space-x-4 text-slate-400 font-medium">
             <button onclick="openLegalModal('terms')" class="hover:text-white transition">利用規約</button>
@@ -165,33 +165,82 @@
 
     <!-- 2. マイページ モーダル -->
     <div id="mypage-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeMypageModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
-            <div class="text-center mb-6">
+            <div class="text-center mb-5">
                 <img id="mypage-avatar" src="" class="w-16 h-16 rounded-full mx-auto mb-3 border border-slate-700 object-cover">
                 <h3 id="mypage-name" class="text-sm font-bold text-white">---</h3>
                 <p id="mypage-email" class="text-xs text-slate-400">---</p>
+                <p id="mypage-bio-preview" class="text-xs text-slate-300 mt-2 italic px-4 line-clamp-2">自己紹介未設定</p>
             </div>
 
-            <div class="space-y-3 mb-6 text-xs">
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
-                    <span id="mypage-free-quota" class="text-emerald-400 font-bold">1 回</span>
+            <!-- プロフィール表示ビュー -->
+            <div id="profile-view-section">
+                <div class="space-y-2 mb-5 text-xs bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
+                    <p class="text-slate-400"><i class="fa-solid fa-building mr-1.5 text-purple-400"></i>所属・拠点: <span id="mypage-affiliation-val" class="text-slate-200 font-semibold">未記入</span></p>
+                    <p class="text-slate-400"><i class="fa-brands fa-x-twitter mr-1.5 text-white"></i>X (Twitter): <a id="mypage-twitter-link" href="#" target="_blank" class="text-orange-400 hover:underline">未設定</a></p>
+                    <p class="text-slate-400"><i class="fa-solid fa-globe mr-1.5 text-blue-400"></i>Webサイト: <a id="mypage-website-link" href="#" target="_blank" class="text-orange-400 hover:underline">未設定</a></p>
                 </div>
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
-                    <span id="mypage-paid-quota" class="text-amber-400 font-bold">0 枚</span>
+
+                <div class="space-y-3 mb-5 text-xs">
+                    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
+                        <span id="mypage-free-quota" class="text-emerald-400 font-bold">1 回</span>
+                    </div>
+                    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
+                        <span id="mypage-paid-quota" class="text-amber-400 font-bold">0 枚</span>
+                    </div>
                 </div>
+
+                <button onclick="toggleProfileEditForm(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 font-bold py-2.5 rounded-xl transition text-xs mb-3 flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-user-pen"></i>
+                    <span>プロフィールを編集</span>
+                </button>
+
+                <button onclick="logoutFromGoogle()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2 rounded-xl transition text-xs mb-2">
+                    ログアウト
+                </button>
             </div>
 
-            <button onclick="logoutFromGoogle()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2.5 rounded-xl transition text-xs mb-2">
-                ログアウト
-            </button>
-            <button onclick="closeMypageModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs border border-slate-700">
-                閉じる
-            </button>
+            <!-- プロフィール編集フォーム（初期非表示） -->
+            <form id="profile-edit-form" onsubmit="saveUserProfile(event)" class="space-y-3.5 hidden pt-3 border-t border-slate-800">
+                <h4 class="text-xs font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-pen-to-square text-orange-400 mr-1.5"></i>プロフィール設定の変更
+                </h4>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">表示名（お名前） <span class="text-orange-500">*</span></label>
+                    <input type="text" id="edit-display-name" required placeholder="例: 山口 功夢" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">自己紹介</label>
+                    <textarea id="edit-bio" rows="3" placeholder="現在の活動や関心テーマを自由に記述してください" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">所属・拠点</label>
+                    <input type="text" id="edit-affiliation" placeholder="未記入" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">X (Twitter) URL</label>
+                    <input type="url" id="edit-twitter" placeholder="https://x.com/username" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Webサイト / ポートフォリオ URL</label>
+                    <input type="url" id="edit-website" placeholder="https://example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div class="flex space-x-2 pt-2">
+                    <button type="button" onclick="toggleProfileEditForm(false)" class="w-1/2 bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-semibold">キャンセル</button>
+                    <button type="submit" id="save-profile-btn" class="w-1/2 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-xs font-bold transition shadow-lg shadow-orange-500/20">保存する</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -314,6 +363,8 @@
             addDoc, 
             onSnapshot, 
             doc, 
+            getDoc,
+            setDoc,
             updateDoc, 
             deleteDoc, 
             increment, 
@@ -346,6 +397,7 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
+        let userProfileData = null;
         let postsList = [];
         let currentFilter = 'all';
         let activePostId = null;
@@ -356,7 +408,7 @@
             listenToPosts();
 
             // リアルタイム認証状態の監視
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 currentUser = user;
                 const loginBtn = document.getElementById('login-btn');
                 const avatarBtn = document.getElementById('user-avatar-btn');
@@ -367,22 +419,132 @@
                     avatarBtn.classList.remove('hidden');
                     avatarImg.src = user.photoURL || 'https://via.placeholder.com/150';
                     document.getElementById('mypage-avatar').src = user.photoURL || 'https://via.placeholder.com/150';
-                    document.getElementById('mypage-name').innerText = user.displayName || 'ユーザー';
-                    document.getElementById('mypage-email').innerText = user.email || '';
+                    
+                    // Firestoreからユーザープロフを同期読み込み
+                    await loadUserProfile(user.uid, user);
                 } else {
                     loginBtn.classList.remove('hidden');
                     avatarBtn.classList.add('hidden');
+                    userProfileData = null;
                 }
 
                 if (activePostId) openDetailModal(activePostId);
             });
         });
 
+        // ユーザープロフィールの読み込み & Firestore同期
+        async function loadUserProfile(uid, defaultAuthUser) {
+            try {
+                const userRef = doc(db, "users", uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    userProfileData = userSnap.data();
+                } else {
+                    // 初回ログイン時はアカウント情報からプロフを作成
+                    userProfileData = {
+                        displayName: defaultAuthUser.displayName || "山口 功夢",
+                        email: defaultAuthUser.email || "",
+                        photoURL: defaultAuthUser.photoURL || "",
+                        bio: "",
+                        affiliation: "未記入",
+                        twitterUrl: "",
+                        websiteUrl: ""
+                    };
+                    await setDoc(userRef, userProfileData);
+                }
+
+                renderUserProfileUI();
+            } catch (error) {
+                console.error("User Profile Sync Error:", error);
+            }
+        }
+
+        // プロフィール情報の画面反映
+        function renderUserProfileUI() {
+            if (!userProfileData) return;
+
+            document.getElementById('mypage-name').innerText = userProfileData.displayName || 'ユーザー';
+            document.getElementById('mypage-email').innerText = userProfileData.email || '';
+            document.getElementById('mypage-bio-preview').innerText = userProfileData.bio || '自己紹介未設定';
+            document.getElementById('mypage-affiliation-val').innerText = userProfileData.affiliation || '未記入';
+
+            const twLink = document.getElementById('mypage-twitter-link');
+            if (userProfileData.twitterUrl) {
+                twLink.href = userProfileData.twitterUrl;
+                twLink.innerText = 'リンクを開く';
+            } else {
+                twLink.href = '#';
+                twLink.innerText = '未設定';
+            }
+
+            const webLink = document.getElementById('mypage-website-link');
+            if (userProfileData.websiteUrl) {
+                webLink.href = userProfileData.websiteUrl;
+                webLink.innerText = 'リンクを開く';
+            } else {
+                webLink.href = '#';
+                webLink.innerText = '未設定';
+            }
+
+            // 編集フォームの初期値挿入
+            document.getElementById('edit-display-name').value = userProfileData.displayName || '';
+            document.getElementById('edit-bio').value = userProfileData.bio || '';
+            document.getElementById('edit-affiliation').value = userProfileData.affiliation || '';
+            document.getElementById('edit-twitter').value = userProfileData.twitterUrl || '';
+            document.getElementById('edit-website').value = userProfileData.websiteUrl || '';
+        }
+
+        // プロフィール編集フォームの表示切替
+        window.toggleProfileEditForm = function(show) {
+            const editForm = document.getElementById('profile-edit-form');
+            const viewSection = document.getElementById('profile-view-section');
+            if (show) {
+                editForm.classList.remove('hidden');
+                viewSection.classList.add('hidden');
+            } else {
+                editForm.classList.add('hidden');
+                viewSection.classList.remove('hidden');
+            }
+        };
+
+        // プロフィール保存処理
+        window.saveUserProfile = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const saveBtn = document.getElementById('save-profile-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "保存中...";
+
+            const updatedData = {
+                displayName: document.getElementById('edit-display-name').value.trim(),
+                bio: document.getElementById('edit-bio').value.trim(),
+                affiliation: document.getElementById('edit-affiliation').value.trim() || '未記入',
+                twitterUrl: document.getElementById('edit-twitter').value.trim(),
+                websiteUrl: document.getElementById('edit-website').value.trim()
+            };
+
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                await updateDoc(userRef, updatedData);
+                userProfileData = { ...userProfileData, ...updatedData };
+                renderUserProfileUI();
+                toggleProfileEditForm(false);
+                alert("プロフィール情報を更新しました！");
+            } catch (error) {
+                console.error("Profile Save Error:", error);
+                alert("プロフィールの保存に失敗しました: " + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = "保存する";
+            }
+        };
+
         // ログイン（ポップアップ方式）
         window.loginWithGoogle = async function() {
             try {
-                const result = await signInWithPopup(auth, provider);
-                console.log("Login Success:", result.user);
+                await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Login Error: ", error);
                 alert("ログインエラーが発生しました: " + error.message);
@@ -645,10 +807,12 @@
                         imageUrl = await getDownloadURL(storageRef);
                     }
 
+                    const authorName = (userProfileData && userProfileData.displayName) ? userProfileData.displayName : (currentUser ? currentUser.displayName : "山口 功夢");
+
                     await addDoc(collection(db, "posts"), {
                         title: title,
                         category: cat,
-                        author: currentUser ? currentUser.displayName : "山口 功夢",
+                        author: authorName,
                         uid: currentUser ? currentUser.uid : "default_uid",
                         url: url,
                         imageUrl: imageUrl,
@@ -700,7 +864,8 @@
             if (!activePostId) return;
             const nameInput = document.getElementById('supporter-name');
             const msgInput = document.getElementById('supporter-msg');
-            const name = nameInput.value.trim() || (currentUser ? currentUser.displayName : '匿名サポーター');
+            const authorName = (userProfileData && userProfileData.displayName) ? userProfileData.displayName : (currentUser ? currentUser.displayName : '匿名サポーター');
+            const name = nameInput.value.trim() || authorName;
             const msg = msgInput.value.trim();
 
             if (!msg) return;
@@ -761,7 +926,10 @@
         };
 
         window.openMypageModal = function() { document.getElementById('mypage-modal').classList.remove('hidden'); };
-        window.closeMypageModal = function() { document.getElementById('mypage-modal').classList.add('hidden'); };
+        window.closeMypageModal = function() { 
+            toggleProfileEditForm(false);
+            document.getElementById('mypage-modal').classList.add('hidden'); 
+        };
 
         window.openDetailModal = function(id) {
             const post = postsList.find(p => p.id === id);
