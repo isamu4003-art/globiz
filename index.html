@@ -302,12 +302,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
         import { 
-            getAuth, 
-            GoogleAuthProvider, 
-            signInWithPopup, 
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithRedirect, 
+    getRedirectResult, 
+    signOut, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -380,12 +381,13 @@
 
         // ログイン・ログアウト処理
         window.loginWithGoogle = async function() {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Login Error: ", error);
-            }
-        };
+    try {
+        await signInWithRedirect(auth, provider);
+    } catch (error) {
+        console.error("Login Error: ", error);
+        alert('ログイン画面への遷移に失敗しました: ' + error.message);
+    }
+};
 
         window.logoutFromGoogle = async function() {
             try {
