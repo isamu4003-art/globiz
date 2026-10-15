@@ -507,6 +507,12 @@
             query, 
             orderBy 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+        import {
+            getStorage,
+            ref,
+            uploadBytes,
+            getDownloadURL
+        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBscZ9GDJ1k-7ZnvFJvbmmQbyfvsQG2xQM",
@@ -521,6 +527,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
@@ -820,8 +827,13 @@
 
             filtered.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition flex flex-col justify-between cursor-pointer group relative";
+                card.className = "bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition flex flex-col justify-between cursor-pointer group relative overflow-hidden";
                 card.onclick = () => openDetailModal(post.id);
+
+                let imageHtml = '';
+                if (post.imageUrl) {
+                    imageHtml = `<div class="w-full h-36 bg-slate-950 rounded-xl mb-3 overflow-hidden border border-slate-800"><img src="${post.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300"></div>`;
+                }
 
                 let subBadge = '';
                 let summaryText = '';
@@ -856,6 +868,7 @@
 
                 card.innerHTML = `
                     <div>
+                        ${imageHtml}
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center flex-wrap gap-1 pr-6">
                                 <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
@@ -933,12 +946,14 @@
             }
         };
 
+        // 投稿フォーム送信（Firebase Storage 画像アップロード対応）
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
+            submitBtn.innerText = "処理中（画像をアップロード中...）";
 
             const cat = document.getElementById('post-category').value;
             const pref = document.getElementById('post-prefecture').value;
@@ -947,7 +962,19 @@
             const rawTags = document.getElementById('post-tags').value;
             const tags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== '') : [];
 
+            // 画像ファイル取得
+            const imageFileInput = document.getElementById('post-image');
+            const file = imageFileInput.files[0];
+            let uploadedImageUrl = null;
+
             try {
+                // 1. 画像が選択されている場合は Firebase Storage にアップロード
+                if (file) {
+                    const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+                    const uploadSnap = await uploadBytes(storageRef, file);
+                    uploadedImageUrl = await getDownloadURL(uploadSnap.ref);
+                }
+
                 let detailsObj = {};
                 if (cat === 'クラファン') {
                     detailsObj = {
@@ -968,14 +995,18 @@
                 const authorName = (userProfileData && userProfileData.displayName) ? userProfileData.displayName : currentUser.displayName;
 
                 if (editingPostId) {
-                    await updateDoc(doc(db, "posts", editingPostId), {
+                    const updatePayload = {
                         title: title,
                         category: cat,
                         prefecture: pref,
                         tags: tags,
                         url: url,
                         details: detailsObj
-                    });
+                    };
+                    if (uploadedImageUrl) {
+                        updatePayload.imageUrl = uploadedImageUrl;
+                    }
+                    await updateDoc(doc(db, "posts", editingPostId), updatePayload);
                     alert('投稿を更新しました！');
                 } else {
                     await addDoc(collection(db, "posts"), {
@@ -986,6 +1017,7 @@
                         author: authorName,
                         uid: currentUser.uid,
                         url: url,
+                        imageUrl: uploadedImageUrl || "",
                         cheers: 0,
                         likedUids: [],
                         comments: [],
@@ -1002,6 +1034,7 @@
                 alert("保存エラー: " + error.message);
             } finally {
                 submitBtn.disabled = false;
+                submitBtn.innerText = editingPostId ? "変更を保存する" : "掲載枠を消費して投稿する";
             }
         });
 
@@ -1094,6 +1127,16 @@
             if (currentUser && post.uid === currentUser.uid) { editBtn.classList.remove('hidden'); deleteBtn.classList.remove('hidden'); }
             else { editBtn.classList.add('hidden'); deleteBtn.classList.add('hidden'); }
 
+            // 画像表示処理
+            const imgContainer = document.getElementById('detail-image-container');
+            const detailImg = document.getElementById('detail-image');
+            if (post.imageUrl) {
+                detailImg.src = post.imageUrl;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
             document.getElementById('detail-category').innerText = post.category;
             document.getElementById('detail-prefecture').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${post.prefecture || '全国'}`;
             document.getElementById('detail-title').innerText = post.title;
@@ -1105,7 +1148,6 @@
             const isBookmarked = userBookmarks.includes(post.id);
             document.getElementById('bookmark-icon').className = isBookmarked ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-amber-400";
 
-            // プロジェクトURLボタンの制御
             const urlContainer = document.getElementById('detail-url-container');
             const urlBtn = document.getElementById('detail-url-btn');
             if (post.url) {
@@ -1124,7 +1166,6 @@
                 const currentNum = parseInt((details.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
                 const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
 
-                // 返礼品表示（ダミー支援ボタンは排除し、情報提示のみ）
                 const returnSectionHtml = details.returnTitle ? `
                     <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/30 p-4 rounded-xl space-y-2 mt-4">
                         <div class="flex justify-between items-center">
