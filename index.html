@@ -69,6 +69,18 @@
                 <input type="text" id="search-input-mobile" onkeyup="searchPostsMobile()" placeholder="キーワード、タグで検索" class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
             </div>
 
+            <!-- ソート・並び替えフィルター -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+                <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center">
+                    <i class="fa-solid fa-arrow-down-wide-short text-amber-400 mr-2"></i>並び替え（ソート）
+                </h3>
+                <select id="sort-select" onchange="changeSortOrder(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+                    <option value="newest">✨ 新着順（新しい順）</option>
+                    <option value="cheers">🔥 応援数順（人気順）</option>
+                    <option value="progress">🎯 達成率順（クラファン）</option>
+                </select>
+            </div>
+
             <!-- カテゴリーフィルター -->
             <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
                 <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center">
@@ -168,10 +180,10 @@
             </button>
 
             <h3 id="modal-title-text" class="text-base font-bold text-white mb-4 flex items-center">
-                <i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿
+                <i class="fa-solid fa-rocket text-orange-500 mr-2"></i><span id="post-modal-action-label">新しい挑戦を投稿</span>
             </h3>
 
-            <!-- 残枠ステータス -->
+            <!-- 残枠ステータス（新規投稿時のみ表示） -->
             <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
@@ -445,7 +457,7 @@
                     </button>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button id="edit-btn" onclick="openEditModal()" class="bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">編集</button>
+                    <button id="edit-btn" onclick="openEditPostModal()" class="bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">編集</button>
                     <button id="delete-btn" onclick="deletePost()" class="bg-red-500/10 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">削除</button>
                     <button onclick="closeDetailModal()" class="bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl">閉じる</button>
                 </div>
@@ -518,8 +530,10 @@
         let currentCategory = 'all';
         let currentPrefecture = 'all';
         let currentTag = 'all';
+        let currentSortOrder = 'newest';
         let activePostId = null;
         let activeAuthorUid = null;
+        let editingPostId = null; // 編集モード中の投稿ID
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
@@ -686,7 +700,6 @@
             else { editForm.classList.add('hidden'); viewSection.classList.remove('hidden'); }
         };
 
-        // プロフィール更新＋過去の全投稿記事の「投稿者名(author)」も一括更新
         window.saveUserProfile = async function(e) {
             e.preventDefault();
             if (!currentUser) return;
@@ -703,11 +716,9 @@
             };
 
             try {
-                // 1. ユーザープロフィールの更新
                 await updateDoc(doc(db, "users", currentUser.uid), updatedData);
                 userProfileData = { ...userProfileData, ...updatedData };
 
-                // 2. 過去の全投稿記事の投稿者名（author）も一括で更新
                 const qPosts = query(collection(db, "posts"), where("uid", "==", currentUser.uid));
                 const querySnapshot = await getDocs(qPosts);
                 
@@ -755,6 +766,7 @@
             return isNaN(num) ? '0' : num.toLocaleString();
         }
 
+        // 投稿一覧（ソート機能統合）
         window.renderPosts = function() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -763,7 +775,8 @@
             const searchValMobile = document.getElementById('search-input-mobile')?.value.toLowerCase() || '';
             const searchVal = searchValPC || searchValMobile;
 
-            const filtered = postsList.filter(post => {
+            // 1. フィルタリング
+            let filtered = postsList.filter(post => {
                 const matchCat = (currentCategory === 'all' || post.category === currentCategory);
                 const matchPref = (currentPrefecture === 'all' || post.prefecture === currentPrefecture);
                 const matchTag = (currentTag === 'all' || (post.tags || []).includes(currentTag));
@@ -772,6 +785,23 @@
                                     (post.tags || []).some(t => t.toLowerCase().includes(searchVal));
                 return matchCat && matchPref && matchTag && matchSearch;
             });
+
+            // 2. ソート（並び替え）処理
+            if (currentSortOrder === 'cheers') {
+                filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
+            } else if (currentSortOrder === 'progress') {
+                filtered.sort((a, b) => {
+                    const getPercent = (p) => {
+                        if (p.category !== 'クラファン') return -1;
+                        const target = parseInt((p.details?.targetAmount || '0').replace(/[^0-9]/g, '')) || 1;
+                        const current = parseInt((p.details?.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
+                        return (current / target) * 100;
+                    };
+                    return getPercent(b) - getPercent(a);
+                });
+            } else { // 'newest'
+                filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
 
             document.getElementById('current-cat-label').innerText = currentCategory === 'all' ? 'すべて' : currentCategory;
             document.getElementById('current-pref-label').innerText = currentPrefecture === 'all' ? '全国' : currentPrefecture;
@@ -853,6 +883,11 @@
             });
         };
 
+        window.changeSortOrder = function(val) {
+            currentSortOrder = val;
+            renderPosts();
+        };
+
         window.onCategoryChange = function() {
             const cat = document.getElementById('post-category').value;
             const container = document.getElementById('dynamic-fields');
@@ -901,6 +936,7 @@
             }
         };
 
+        // 投稿フォーム送信（新規 ＆ 編集の両方に対応）
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
@@ -935,23 +971,37 @@
 
                 const authorName = (userProfileData && userProfileData.displayName) ? userProfileData.displayName : currentUser.displayName;
 
-                await addDoc(collection(db, "posts"), {
-                    title: title,
-                    category: cat,
-                    prefecture: pref,
-                    tags: tags,
-                    author: authorName,
-                    uid: currentUser.uid,
-                    url: url,
-                    cheers: 0,
-                    likedUids: [],
-                    comments: [],
-                    date: new Date().toLocaleDateString('ja-JP'),
-                    createdAt: Date.now(),
-                    details: detailsObj
-                });
+                if (editingPostId) {
+                    // 編集更新処理
+                    await updateDoc(doc(db, "posts", editingPostId), {
+                        title: title,
+                        category: cat,
+                        prefecture: pref,
+                        tags: tags,
+                        url: url,
+                        details: detailsObj
+                    });
+                    alert('投稿を更新しました！');
+                } else {
+                    // 新規作成処理
+                    await addDoc(collection(db, "posts"), {
+                        title: title,
+                        category: cat,
+                        prefecture: pref,
+                        tags: tags,
+                        author: authorName,
+                        uid: currentUser.uid,
+                        url: url,
+                        cheers: 0,
+                        likedUids: [],
+                        comments: [],
+                        date: new Date().toLocaleDateString('ja-JP'),
+                        createdAt: Date.now(),
+                        details: detailsObj
+                    });
+                    alert('投稿が完了しました！');
+                }
 
-                alert('投稿が完了しました！');
                 closePostModal();
                 document.getElementById('post-form').reset();
             } catch (error) {
@@ -960,6 +1010,49 @@
                 submitBtn.disabled = false;
             }
         });
+
+        // 記事編集モーダルを開く
+        window.openEditPostModal = function() {
+            if (!activePostId) return;
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post) return;
+
+            editingPostId = post.id;
+            closeDetailModal();
+
+            document.getElementById('post-modal-action-label').innerText = "挑戦記事の編集";
+            document.getElementById('submit-btn').innerText = "変更を保存する";
+            document.getElementById('post-quota-status').classList.add('hidden');
+            document.getElementById('post-stripe-section').classList.add('hidden');
+
+            document.getElementById('post-category').value = post.category || 'クラファン';
+            document.getElementById('post-prefecture').value = post.prefecture || '全国・オンライン';
+            document.getElementById('post-title').value = post.title || '';
+            document.getElementById('post-url').value = post.url || '';
+            document.getElementById('post-tags').value = (post.tags || []).join(', ');
+
+            onCategoryChange();
+
+            const details = post.details || {};
+            if (post.category === 'クラファン') {
+                if (document.getElementById('cf-target')) document.getElementById('cf-target').value = details.targetAmount || '';
+                if (document.getElementById('cf-current')) document.getElementById('cf-current').value = details.currentAmount || '0';
+                if (document.getElementById('cf-enddate')) document.getElementById('cf-enddate').value = details.endDate || '';
+                if (document.getElementById('cf-use')) document.getElementById('cf-use').value = details.useOfFunds || '';
+                if (document.getElementById('cf-return-price')) document.getElementById('cf-return-price').value = details.returnPrice || '';
+                if (document.getElementById('cf-return-title')) document.getElementById('cf-return-title').value = details.returnTitle || '';
+                if (document.getElementById('cf-return-desc')) document.getElementById('cf-return-desc').value = details.returnDesc || '';
+            } else if (post.category === '求人・募集') {
+                if (document.getElementById('job-role')) document.getElementById('job-role').value = details.role || '';
+                if (document.getElementById('job-type')) document.getElementById('job-type').value = details.workType || '';
+                if (document.getElementById('job-skills')) document.getElementById('job-skills').value = details.skills || '';
+            } else {
+                if (document.getElementById('biz-business')) document.getElementById('biz-business').value = details.business || '';
+                if (document.getElementById('biz-vision')) document.getElementById('biz-vision').value = details.vision || '';
+            }
+
+            document.getElementById('post-modal').classList.remove('hidden');
+        };
 
         window.supportCrowdfundingReturn = async function() {
             if (!activePostId) return;
@@ -1160,11 +1253,16 @@
 
         window.openPostModal = function() {
             if (!currentUser) { alert('投稿するにはログインが必要です'); loginWithGoogle(); return; }
+            editingPostId = null; // 新規モードリセット
             document.getElementById('post-form').reset();
+            document.getElementById('post-modal-action-label').innerText = "新しい挑戦を投稿";
+            document.getElementById('submit-btn').innerText = "掲載枠を消費して投稿する";
+            document.getElementById('post-quota-status').classList.remove('hidden');
+            document.getElementById('post-stripe-section').classList.remove('hidden');
             onCategoryChange();
             document.getElementById('post-modal').classList.remove('hidden');
         };
-        window.closePostModal = function() { document.getElementById('post-modal').classList.add('hidden'); };
+        window.closePostModal = function() { editingPostId = null; document.getElementById('post-modal').classList.add('hidden'); };
         window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); };
         window.closeMypageModal = function() { toggleProfileEditForm(false); document.getElementById('mypage-modal').classList.add('hidden'); };
         window.openLegalModal = function(t) { document.getElementById('legal-modal').classList.remove('hidden'); };
