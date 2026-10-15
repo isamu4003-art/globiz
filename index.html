@@ -76,6 +76,7 @@
                 </h3>
                 <select id="sort-select" onchange="changeSortOrder(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
                     <option value="newest">✨ 新着順（新しい順）</option>
+                    <option value="updated">⚡️ 最近アプデがあった順</option>
                     <option value="cheers">🔥 応援数順（人気順）</option>
                     <option value="progress">🎯 達成率順（クラファン）</option>
                 </select>
@@ -414,6 +415,37 @@
                 <a id="detail-url-btn" href="#" target="_blank" class="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
                     <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
                 </a>
+            </div>
+
+            <!-- ★進捗・開発ログ（ビルド・イン・パブリック）タイムラインセクション★ -->
+            <div id="progress-logs-section" class="mb-6 pt-4 border-t border-slate-800">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-xs font-bold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-timeline text-amber-400 mr-1.5"></i> 挑戦のリアルタイム進捗ログ (<span id="logs-count">0</span>)
+                    </h4>
+                </div>
+
+                <!-- 投稿者専用: 進捗ログ追加フォーム -->
+                <form id="add-log-form" onsubmit="addProgressLog(event)" class="hidden bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 mb-4 space-y-2.5">
+                    <p class="text-[11px] font-bold text-orange-400 flex items-center">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> 新しい進捗・アップデートを追加
+                    </p>
+                    <input type="text" id="log-title" required placeholder="タイトル（例: LPデザイン完成 / ベータ版リリース）" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white">
+                    <textarea id="log-text" required rows="2" placeholder="詳細や失敗談・次のステップを入力..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"></textarea>
+                    
+                    <div class="flex items-center space-x-2">
+                        <input type="file" id="log-image" accept="image/*" class="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-slate-800 file:text-orange-400">
+                    </div>
+
+                    <button type="submit" id="add-log-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-2 rounded-lg text-xs transition">
+                        進捗ログをタイムラインに投稿する
+                    </button>
+                </form>
+
+                <!-- 進捗タイムラインリスト -->
+                <div id="logs-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    <p class="text-[11px] text-slate-500 text-center py-2">進捗ログはまだありません</p>
+                </div>
             </div>
 
             <!-- SNS共有（シェア）ボタンエリア -->
@@ -793,6 +825,8 @@
 
             if (currentSortOrder === 'cheers') {
                 filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
+            } else if (currentSortOrder === 'updated') {
+                filtered.sort((a, b) => (b.lastUpdatedAt || b.createdAt || 0) - (a.lastUpdatedAt || a.createdAt || 0));
             } else if (currentSortOrder === 'progress') {
                 filtered.sort((a, b) => {
                     const getPercent = (p) => {
@@ -861,6 +895,9 @@
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
+                const logsCount = (post.progressLogs || []).length;
+                const logBadge = logsCount > 0 ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-bolt mr-1"></i>アプデ ${logsCount}</span>` : '';
+
                 const tagsHtml = (post.tags || []).slice(0, 3).map(t => `<span onclick="filterTag('${t}', event)" class="text-[10px] text-slate-400 hover:text-amber-400 bg-slate-800 px-2 py-0.5 rounded-md">#${t}</span>`).join(' ');
 
                 const isBookmarked = userBookmarks.includes(post.id);
@@ -874,6 +911,7 @@
                                 <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
                                 <span class="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">${post.prefecture || '全国'}</span>
                                 ${subBadge}
+                                ${logBadge}
                             </div>
                             <button onclick="toggleBookmark('${post.id}', event)" class="absolute top-4 right-4 p-1">
                                 <i class="${bmClass} text-sm"></i>
@@ -946,7 +984,7 @@
             }
         };
 
-        // 投稿フォーム送信（Firebase Storage 画像アップロード対応）
+        // 投稿フォーム送信（Firebase Storage 対応）
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
@@ -962,13 +1000,11 @@
             const rawTags = document.getElementById('post-tags').value;
             const tags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== '') : [];
 
-            // 画像ファイル取得
             const imageFileInput = document.getElementById('post-image');
             const file = imageFileInput.files[0];
             let uploadedImageUrl = null;
 
             try {
-                // 1. 画像が選択されている場合は Firebase Storage にアップロード
                 if (file) {
                     const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
                     const uploadSnap = await uploadBytes(storageRef, file);
@@ -1001,7 +1037,8 @@
                         prefecture: pref,
                         tags: tags,
                         url: url,
-                        details: detailsObj
+                        details: detailsObj,
+                        lastUpdatedAt: Date.now()
                     };
                     if (uploadedImageUrl) {
                         updatePayload.imageUrl = uploadedImageUrl;
@@ -1021,8 +1058,10 @@
                         cheers: 0,
                         likedUids: [],
                         comments: [],
+                        progressLogs: [], // 進捗ログ配列初期化
                         date: new Date().toLocaleDateString('ja-JP'),
                         createdAt: Date.now(),
+                        lastUpdatedAt: Date.now(),
                         details: detailsObj
                     });
                     alert('投稿が完了しました！');
@@ -1037,6 +1076,56 @@
                 submitBtn.innerText = editingPostId ? "変更を保存する" : "掲載枠を消費して投稿する";
             }
         });
+
+        // 進捗ログ追加処理
+        window.addProgressLog = async function(e) {
+            e.preventDefault();
+            if (!activePostId || !currentUser) return;
+
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post || post.uid !== currentUser.uid) return;
+
+            const addLogBtn = document.getElementById('add-log-btn');
+            addLogBtn.disabled = true;
+            addLogBtn.innerText = "アプデを投稿中...";
+
+            const title = document.getElementById('log-title').value.trim();
+            const text = document.getElementById('log-text').value.trim();
+            const fileInput = document.getElementById('log-image');
+            const file = fileInput.files[0];
+            let logImgUrl = "";
+
+            try {
+                if (file) {
+                    const storageRef = ref(storage, `logs/${Date.now()}_${file.name}`);
+                    const uploadSnap = await uploadBytes(storageRef, file);
+                    logImgUrl = await getDownloadURL(uploadSnap.ref);
+                }
+
+                const newLog = {
+                    id: Date.now().toString(),
+                    title: title,
+                    text: text,
+                    imageUrl: logImgUrl,
+                    date: new Date().toLocaleDateString('ja-JP'),
+                    timestamp: Date.now()
+                };
+
+                const postRef = doc(db, "posts", activePostId);
+                await updateDoc(postRef, {
+                    progressLogs: arrayUnion(newLog),
+                    lastUpdatedAt: Date.now()
+                });
+
+                document.getElementById('add-log-form').reset();
+                alert("進捗ログを追加しました！");
+            } catch (err) {
+                alert("進捗ログの追加に失敗しました: " + err.message);
+            } finally {
+                addLogBtn.disabled = false;
+                addLogBtn.innerText = "進捗ログをタイムラインに投稿する";
+            }
+        };
 
         window.openEditPostModal = function() {
             if (!activePostId) return;
@@ -1124,10 +1213,18 @@
 
             const editBtn = document.getElementById('edit-btn');
             const deleteBtn = document.getElementById('delete-btn');
-            if (currentUser && post.uid === currentUser.uid) { editBtn.classList.remove('hidden'); deleteBtn.classList.remove('hidden'); }
-            else { editBtn.classList.add('hidden'); deleteBtn.classList.add('hidden'); }
+            const logForm = document.getElementById('add-log-form');
 
-            // 画像表示処理
+            if (currentUser && post.uid === currentUser.uid) { 
+                editBtn.classList.remove('hidden'); 
+                deleteBtn.classList.remove('hidden'); 
+                logForm.classList.remove('hidden'); // 投稿者自身の場合、進捗投稿フォームを表示
+            } else { 
+                editBtn.classList.add('hidden'); 
+                deleteBtn.classList.add('hidden'); 
+                logForm.classList.add('hidden');
+            }
+
             const imgContainer = document.getElementById('detail-image-container');
             const detailImg = document.getElementById('detail-image');
             if (post.imageUrl) {
@@ -1206,6 +1303,33 @@
                         <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.business || details.skills || '-'}</div>
                     </div>
                 `;
+            }
+
+            // 進捗ログ（アプデ）のレンダリング
+            const logs = post.progressLogs || [];
+            document.getElementById('logs-count').innerText = logs.length;
+            const logsListElem = document.getElementById('logs-list');
+            logsListElem.innerHTML = '';
+
+            if (logs.length === 0) {
+                logsListElem.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-2">進捗ログはまだありません</p>`;
+            } else {
+                logs.slice().reverse().forEach(log => {
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-800/80 border border-amber-500/20 p-3.5 rounded-xl text-xs relative space-y-1.5";
+                    
+                    let logImgHtml = log.imageUrl ? `<img src="${log.imageUrl}" class="w-full max-h-48 object-cover rounded-lg mt-2 border border-slate-700">` : '';
+
+                    item.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-amber-400 text-xs"><i class="fa-solid fa-bolt mr-1"></i>${log.title}</span>
+                            <span class="text-[10px] text-slate-500">${log.date}</span>
+                        </div>
+                        <p class="text-slate-200 leading-relaxed whitespace-pre-wrap text-[11px]">${log.text}</p>
+                        ${logImgHtml}
+                    `;
+                    logsListElem.appendChild(item);
+                });
             }
 
             const comments = post.comments || [];
