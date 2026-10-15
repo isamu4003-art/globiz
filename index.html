@@ -36,7 +36,7 @@
                 <div id="auth-btn-container">
                     <button id="login-btn" onclick="loginWithGoogle()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1.5">
                         <i class="fa-brands fa-google text-orange-400"></i>
-                        <span>ログイン</span>
+                        <span>Googleでログイン</span>
                     </button>
                     <button id="user-avatar-btn" onclick="openMypageModal()" class="hidden text-slate-300 hover:text-white p-1 rounded-full hover:bg-slate-800 transition border border-slate-700">
                         <img id="user-avatar-img" src="" class="w-8 h-8 rounded-full object-cover">
@@ -302,13 +302,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
         import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithRedirect, 
-    getRedirectResult, 
-    signOut, 
-    onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithRedirect, 
+            getRedirectResult,
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -356,6 +356,16 @@
             onCategoryChange();
             listenToPosts();
 
+            // Googleリダイレクト戻り時の認証受取処理
+            getRedirectResult(auth).then((result) => {
+                if (result && result.user) {
+                    console.log("Redirect login successful:", result.user);
+                }
+            }).catch((error) => {
+                console.error("Redirect Error: ", error);
+                alert("ログインエラー: " + error.message);
+            });
+
             // 認証状態の監視
             onAuthStateChanged(auth, (user) => {
                 currentUser = user;
@@ -379,15 +389,15 @@
             });
         });
 
-        // ログイン・ログアウト処理
+        // ログイン（画面リダイレクト方式でポップアップ遮断を回避）
         window.loginWithGoogle = async function() {
-    try {
-        await signInWithRedirect(auth, provider);
-    } catch (error) {
-        console.error("Login Error: ", error);
-        alert('ログイン画面への遷移に失敗しました: ' + error.message);
-    }
-};
+            try {
+                await signInWithRedirect(auth, provider);
+            } catch (error) {
+                console.error("Login Error: ", error);
+                alert("ログイン処理を開始できませんでした: " + error.message);
+            }
+        };
 
         window.logoutFromGoogle = async function() {
             try {
@@ -585,7 +595,7 @@
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser && !editingPostId) {
-                alert('投稿するにはログインが必要です');
+                alert('投稿するにはGoogleログインが必要です');
                 loginWithGoogle();
                 return;
             }
@@ -648,8 +658,8 @@
                     await addDoc(collection(db, "posts"), {
                         title: title,
                         category: cat,
-                        author: currentUser.displayName || "山口 功夢",
-                        uid: currentUser.uid,
+                        author: currentUser ? currentUser.displayName : "山口 功夢",
+                        uid: currentUser ? currentUser.uid : "default_uid",
                         url: url,
                         imageUrl: imageUrl,
                         cheers: 0,
@@ -667,6 +677,7 @@
                 onCategoryChange();
             } catch (error) {
                 console.error("Error saving document: ", error);
+                alert("保存中にエラーが発生しました: " + error.message);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "掲載枠を消費して投稿する";
