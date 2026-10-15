@@ -171,6 +171,18 @@
                 <i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿
             </h3>
 
+            <!-- 残枠ステータス -->
+            <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
+                    <span id="quota-free" class="text-emerald-400 font-bold">1 回</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>保有有料チケット</span>
+                    <span id="quota-paid" class="text-amber-400 font-bold">0 枚</span>
+                </div>
+            </div>
+
             <form id="post-form" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -230,6 +242,17 @@
                     掲載枠を消費して投稿する
                 </button>
             </form>
+
+            <!-- Stripe チケット追加購入ボタン (投稿モーダル内) -->
+            <div id="post-stripe-section" class="mt-6 pt-5 border-t border-slate-800 space-y-2">
+                <p class="text-[11px] text-slate-400 text-center mb-2 font-medium">💡 掲載枠を追加・購入する場合はこちら</p>
+                <a href="https://buy.stripe.com/8x26oIbba5hq1VkbUlcV201" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs">
+                    <i class="fa-solid fa-ticket mr-1.5 text-amber-400"></i> 単発掲載チケットを購入（¥5,000）
+                </a>
+                <a href="https://buy.stripe.com/dRm14obba4dm7fE1fHcV200" target="_blank" class="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> 月額プランに加入（¥5,000 / 月）
+                </a>
+            </div>
         </div>
     </div>
 
@@ -256,10 +279,25 @@
             <!-- タブ1: プロフィール表示ビュー -->
             <div id="mypage-tab-profile">
                 <div id="profile-view-section">
-                    <div class="space-y-2 mb-5 text-xs bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
+                    <div class="space-y-2 mb-4 text-xs bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
                         <p class="text-slate-400"><i class="fa-solid fa-building mr-1.5 text-purple-400"></i>所属・拠点: <span id="mypage-affiliation-val" class="text-slate-200 font-semibold">未記入</span></p>
                         <p class="text-slate-400"><i class="fa-brands fa-x-twitter mr-1.5 text-white"></i>X (Twitter): <a id="mypage-twitter-link" href="#" target="_blank" class="text-orange-400 hover:underline">未設定</a></p>
                         <p class="text-slate-400"><i class="fa-solid fa-globe mr-1.5 text-blue-400"></i>Webサイト: <a id="mypage-website-link" href="#" target="_blank" class="text-orange-400 hover:underline">未設定</a></p>
+                    </div>
+
+                    <!-- マイページ内 Stripe 掲載チケット購入セクション -->
+                    <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 mb-4 space-y-2">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-bold text-slate-200"><i class="fa-solid fa-ticket text-amber-400 mr-1.5"></i>掲載枠の購入・追加</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2">
+                            <a href="https://buy.stripe.com/8x26oIbba5hq1VkbUlcV201" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded-xl transition text-[11px]">
+                                <i class="fa-solid fa-ticket text-amber-400 mr-1"></i> 単発チケットを購入（¥5,000）
+                            </a>
+                            <a href="https://buy.stripe.com/dRm14obba4dm7fE1fHcV200" target="_blank" class="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2 rounded-xl transition text-[11px] shadow-lg shadow-orange-500/20">
+                                <i class="fa-solid fa-crown text-amber-300 mr-1"></i> 月額サブスクプラン加入（¥5,000/月）
+                            </a>
+                        </div>
                     </div>
 
                     <button onclick="toggleProfileEditForm(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 font-bold py-2.5 rounded-xl transition text-xs mb-3 flex items-center justify-center space-x-1.5">
@@ -560,7 +598,6 @@
             document.getElementById('edit-website').value = userProfileData.websiteUrl || '';
         }
 
-        // ブックマーク一覧の更新
         function renderBookmarksUI() {
             const container = document.getElementById('mypage-tab-bookmarks');
             document.getElementById('bookmark-count').innerText = userBookmarks.length;
@@ -589,7 +626,6 @@
             });
         }
 
-        // マイページのタブ切替
         window.switchMypageTab = function(tab) {
             const pTab = document.getElementById('mypage-tab-profile');
             const bTab = document.getElementById('mypage-tab-bookmarks');
@@ -609,7 +645,6 @@
             }
         };
 
-        // お気に入り（ブックマーク）の追加・解除
         window.toggleBookmark = async function(postId, event) {
             if (event) event.stopPropagation();
             if (!currentUser) {
@@ -696,19 +731,12 @@
             });
         }
 
-        function getRemainingDays(endDateStr) {
-            if (!endDateStr) return null;
-            const diffDays = Math.ceil((new Date(endDateStr) - new Date()) / (1000 * 60 * 60 * 24));
-            return diffDays > 0 ? diffDays : 0;
-        }
-
         function formatMoney(val) {
             if (!val) return '0';
             const num = parseInt(val.toString().replace(/[^0-9]/g, ''));
             return isNaN(num) ? '0' : num.toLocaleString();
         }
 
-        // 投稿一覧表示（フィルター ＋ タグ ＋ ブックマークアイコン）
         window.renderPosts = function() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -776,7 +804,6 @@
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
-                // タグ表示
                 const tagsHtml = (post.tags || []).slice(0, 3).map(t => `<span onclick="filterTag('${t}', event)" class="text-[10px] text-slate-400 hover:text-amber-400 bg-slate-800 px-2 py-0.5 rounded-md">#${t}</span>`).join(' ');
 
                 const isBookmarked = userBookmarks.includes(post.id);
@@ -856,7 +883,6 @@
             }
         };
 
-        // 投稿処理（タグ機能統合）
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
@@ -917,7 +943,6 @@
             }
         });
 
-        // クラファンリターン支援（模擬支援機能）
         window.supportCrowdfundingReturn = async function() {
             if (!activePostId) return;
             if (!currentUser) { alert('支援するにはログインが必要です'); loginWithGoogle(); return; }
@@ -945,7 +970,6 @@
             }
         };
 
-        // 他ユーザーのプロフィールモーダル開閉
         window.openUserProfileByUid = async function(uid, event) {
             if (event) event.stopPropagation();
             if (!uid || uid === 'default_uid') return;
@@ -982,7 +1006,6 @@
             document.getElementById('user-profile-modal').classList.add('hidden');
         };
 
-        // 詳細モーダル表示（リターン支援 & タグ ＋ プロフリンク連携）
         window.openDetailModal = function(id) {
             const post = postsList.find(p => p.id === id);
             if (!post) return;
@@ -999,11 +1022,9 @@
             document.getElementById('detail-title').innerText = post.title;
             document.getElementById('detail-author').innerText = `投稿者: ${post.author || '匿名'} (${post.date || ''})`;
 
-            // タグ一覧
             const tagsContainer = document.getElementById('detail-tags-container');
             tagsContainer.innerHTML = (post.tags || []).map(t => `<span onclick="filterTag('${t}', event)" class="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-orange-500/20">#${t}</span>`).join('');
 
-            // ブックマークボタン状態
             const isBookmarked = userBookmarks.includes(post.id);
             document.getElementById('bookmark-icon').className = isBookmarked ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-amber-400";
 
@@ -1061,7 +1082,6 @@
                 `;
             }
 
-            // サポーターコメント
             const comments = post.comments || [];
             document.getElementById('comments-count').innerText = comments.length;
             const commentsListElem = document.getElementById('comments-list');
@@ -1108,7 +1128,6 @@
             try { await deleteDoc(doc(db, "posts", activePostId)); closeDetailModal(); alert('削除しました'); } catch (e) {}
         };
 
-        // フィルター操作
         window.filterCategory = function(cat) { currentCategory = cat; renderPosts(); };
         window.filterPrefecture = function(pref) { currentPrefecture = pref; document.getElementById('pref-filter-select').value = pref; renderPosts(); };
         window.filterTag = function(tag, event) {
