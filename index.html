@@ -304,8 +304,7 @@
         import { 
             getAuth, 
             GoogleAuthProvider, 
-            signInWithRedirect, 
-            getRedirectResult,
+            signInWithPopup, 
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
@@ -356,17 +355,7 @@
             onCategoryChange();
             listenToPosts();
 
-            // Googleリダイレクト戻り時の認証受取処理
-            getRedirectResult(auth).then((result) => {
-                if (result && result.user) {
-                    console.log("Redirect login successful:", result.user);
-                }
-            }).catch((error) => {
-                console.error("Redirect Error: ", error);
-                alert("ログインエラー: " + error.message);
-            });
-
-            // 認証状態の監視
+            // リアルタイム認証状態の監視
             onAuthStateChanged(auth, (user) => {
                 currentUser = user;
                 const loginBtn = document.getElementById('login-btn');
@@ -389,13 +378,14 @@
             });
         });
 
-        // ログイン（画面リダイレクト方式でポップアップ遮断を回避）
+        // ログイン（ポップアップ方式）
         window.loginWithGoogle = async function() {
             try {
-                await signInWithRedirect(auth, provider);
+                const result = await signInWithPopup(auth, provider);
+                console.log("Login Success:", result.user);
             } catch (error) {
                 console.error("Login Error: ", error);
-                alert("ログイン処理を開始できませんでした: " + error.message);
+                alert("ログインエラーが発生しました: " + error.message);
             }
         };
 
