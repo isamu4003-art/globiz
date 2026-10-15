@@ -32,9 +32,17 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <button onclick="openMypageModal()" class="text-slate-300 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
-                    <i class="fa-solid fa-circle-user text-2xl"></i>
-                </button>
+                <!-- ユーザーログイン状態アイコン -->
+                <div id="auth-btn-container">
+                    <button id="login-btn" onclick="loginWithGoogle()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1.5">
+                        <i class="fa-brands fa-google text-orange-400"></i>
+                        <span>ログイン</span>
+                    </button>
+                    <button id="user-avatar-btn" onclick="openMypageModal()" class="hidden text-slate-300 hover:text-white p-1 rounded-full hover:bg-slate-800 transition border border-slate-700">
+                        <img id="user-avatar-img" src="" class="w-8 h-8 rounded-full object-cover">
+                    </button>
+                </div>
+
                 <button onclick="openPostModal()" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-orange-500/20 transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-plus"></i>
                     <span>挑戦を投稿</span>
@@ -67,8 +75,15 @@
         </div>
     </main>
 
-    <!-- フッター -->
-    <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 mt-12">
+    <!-- フッター（法的表記リンク集） -->
+    <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 mt-12 space-y-3">
+        <div class="flex justify-center space-x-4 text-slate-400 font-medium">
+            <button onclick="openLegalModal('terms')" class="hover:text-white transition">利用規約</button>
+            <span>•</span>
+            <button onclick="openLegalModal('privacy')" class="hover:text-white transition">プライバシーポリシー</button>
+            <span>•</span>
+            <button onclick="openLegalModal('tokusho')" class="hover:text-white transition">特定商取引法に基づく表記</button>
+        </div>
         <p>&copy; 2026 Globiz Inc. All rights reserved.</p>
     </footer>
 
@@ -90,15 +105,11 @@
             <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
-                    <span class="text-emerald-400 font-bold">利用可能（1回）</span>
+                    <span id="quota-free" class="text-emerald-400 font-bold">1 回</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-rotate text-blue-400 mr-2"></i>サブスク当月残り</span>
-                    <span class="text-slate-400 font-bold">0 回</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
-                    <span class="text-amber-400 font-bold">0 枚</span>
+                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>保有有料チケット</span>
+                    <span id="quota-paid" class="text-amber-400 font-bold">0 枚</span>
                 </div>
             </div>
 
@@ -134,7 +145,7 @@
                 <div id="dynamic-fields" class="space-y-4 pt-2 border-t border-slate-800/80"></div>
 
                 <button type="submit" id="submit-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-orange-500/20 mt-2">
-                    無料掲載枠（1回分）を消費して投稿する
+                    掲載枠を消費して投稿する
                 </button>
             </form>
 
@@ -159,28 +170,25 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-700 text-slate-300">
-                    <i class="fa-solid fa-user text-2xl"></i>
-                </div>
-                <h3 class="text-sm font-bold text-white">山口功夢</h3>
-                <p class="text-xs text-slate-400">isamu4003@gmail.com</p>
+                <img id="mypage-avatar" src="" class="w-16 h-16 rounded-full mx-auto mb-3 border border-slate-700 object-cover">
+                <h3 id="mypage-name" class="text-sm font-bold text-white">---</h3>
+                <p id="mypage-email" class="text-xs text-slate-400">---</p>
             </div>
 
             <div class="space-y-3 mb-6 text-xs">
                 <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
                     <span class="text-slate-300 font-semibold"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
-                    <span class="text-emerald-400 font-bold">1 回</span>
-                </div>
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold"><i class="fa-solid fa-rotate text-blue-400 mr-2"></i>サブスク当月残り</span>
-                    <span class="text-slate-400 font-bold">0 回</span>
+                    <span id="mypage-free-quota" class="text-emerald-400 font-bold">1 回</span>
                 </div>
                 <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex justify-between items-center">
                     <span class="text-slate-300 font-semibold"><i class="fa-solid fa-ticket text-amber-400 mr-2"></i>単発購入チケット</span>
-                    <span class="text-amber-400 font-bold">0 枚</span>
+                    <span id="mypage-paid-quota" class="text-amber-400 font-bold">0 枚</span>
                 </div>
             </div>
 
+            <button onclick="logoutFromGoogle()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2.5 rounded-xl transition text-xs mb-2">
+                ログアウト
+            </button>
             <button onclick="closeMypageModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs border border-slate-700">
                 閉じる
             </button>
@@ -195,7 +203,7 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             
-            <!-- 全体表示用画像エリア -->
+            <!-- 画像表示エリア -->
             <div id="detail-image-container" class="mb-4 hidden bg-slate-950/60 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center max-h-80">
                 <img id="detail-image" src="" class="w-full max-h-80 object-contain">
             </div>
@@ -217,13 +225,30 @@
                 </a>
             </div>
 
-            <!-- 4. サポーター＆応援メッセージセクション -->
+            <!-- SNS共有（シェア）ボタンエリア -->
+            <div class="mb-6 p-3 bg-slate-800/40 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-share-nodes text-orange-400 mr-1.5"></i>この挑戦をSNSで応援</span>
+                <div class="flex space-x-2">
+                    <button onclick="shareToX()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-slate-700 flex items-center space-x-1">
+                        <i class="fa-brands fa-x-twitter"></i>
+                        <span>ポスト</span>
+                    </button>
+                    <button onclick="shareToLine()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1">
+                        <i class="fa-brands fa-line"></i>
+                        <span>LINE</span>
+                    </button>
+                    <button onclick="copyShareLink()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-slate-700">
+                        <i class="fa-solid fa-link"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- サポーター＆応援メッセージ -->
             <div id="supporters-section" class="mb-6 pt-4 border-t border-slate-800">
                 <h4 class="text-xs font-bold text-slate-200 mb-3 flex items-center">
                     <i class="fa-solid fa-users text-orange-400 mr-1.5"></i> サポーターからの応援メッセージ (<span id="comments-count">0</span>)
                 </h4>
                 
-                <!-- メッセージ送信フォーム -->
                 <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60 mb-4 space-y-2">
                     <div class="flex gap-2">
                         <input type="text" id="supporter-name" placeholder="お名前（任意）" class="w-1/3 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500">
@@ -234,13 +259,12 @@
                     </button>
                 </div>
 
-                <!-- メッセージリスト -->
                 <div id="comments-list" class="space-y-2 max-h-40 overflow-y-auto pr-1">
                     <p class="text-[11px] text-slate-500 text-center py-2">まだメッセージはありません</p>
                 </div>
             </div>
 
-            <!-- フッター操作エリア（応援 / 編集 / 削除） -->
+            <!-- フッター操作エリア -->
             <div class="flex justify-between items-center pt-4 border-t border-slate-800">
                 <button onclick="cheerPost()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-orange-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-heart"></i>
@@ -262,9 +286,28 @@
     </div>
 
 
+    <!-- 4. 法的表記（利用規約 / 特商法 / プライバシーポリシー） モーダル -->
+    <div id="legal-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <button onclick="closeLegalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 id="legal-modal-title" class="text-sm font-bold text-white mb-4">規約情報</h3>
+            <div id="legal-modal-body" class="text-xs text-slate-300 space-y-3 leading-relaxed whitespace-pre-wrap border-t border-slate-800 pt-3"></div>
+        </div>
+    </div>
+
+
     <!-- ==================== Firebase SDK & JavaScript モジュール ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -297,9 +340,12 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
 
+        let currentUser = null;
         let postsList = [];
         let currentFilter = 'all';
         let activePostId = null;
@@ -308,7 +354,47 @@
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
             listenToPosts();
+
+            // 認証状態の監視
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                const loginBtn = document.getElementById('login-btn');
+                const avatarBtn = document.getElementById('user-avatar-btn');
+                const avatarImg = document.getElementById('user-avatar-img');
+
+                if (user) {
+                    loginBtn.classList.add('hidden');
+                    avatarBtn.classList.remove('hidden');
+                    avatarImg.src = user.photoURL || 'https://via.placeholder.com/150';
+                    document.getElementById('mypage-avatar').src = user.photoURL || 'https://via.placeholder.com/150';
+                    document.getElementById('mypage-name').innerText = user.displayName || 'ユーザー';
+                    document.getElementById('mypage-email').innerText = user.email || '';
+                } else {
+                    loginBtn.classList.remove('hidden');
+                    avatarBtn.classList.add('hidden');
+                }
+
+                if (activePostId) openDetailModal(activePostId);
+            });
         });
+
+        // ログイン・ログアウト処理
+        window.loginWithGoogle = async function() {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Login Error: ", error);
+            }
+        };
+
+        window.logoutFromGoogle = async function() {
+            try {
+                await signOut(auth);
+                closeMypageModal();
+            } catch (error) {
+                console.error("Logout Error: ", error);
+            }
+        };
 
         // Firestoreリアルタイム同期
         function listenToPosts() {
@@ -319,27 +405,20 @@
                     postsList.push({ id: doc.id, ...doc.data() });
                 });
                 renderPosts();
-                if (activePostId) {
-                    // 詳細表示中に更新があれば再描画
-                    openDetailModal(activePostId);
-                }
+                if (activePostId) openDetailModal(activePostId);
             }, (error) => {
                 console.error("Firestore error:", error);
-                document.getElementById('posts-grid').innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">データの読み込みに失敗しました</div>`;
             });
         }
 
-        // 残り日数の計算ヘルパー
         function getRemainingDays(endDateStr) {
             if (!endDateStr) return null;
             const end = new Date(endDateStr);
             const now = new Date();
-            const diffTime = end - now;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
             return diffDays > 0 ? diffDays : 0;
         }
 
-        // 数値カンマ区切りヘルパー
         function formatMoney(val) {
             if (!val) return '0';
             const num = parseInt(val.toString().replace(/[^0-9]/g, ''));
@@ -350,7 +429,6 @@
         window.renderPosts = function() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
-
             const searchVal = document.getElementById('search-input').value.toLowerCase();
 
             const filtered = postsList.filter(post => {
@@ -377,15 +455,12 @@
                     const targetNum = parseInt((post.details?.targetAmount || '0').replace(/[^0-9]/g, '')) || 1;
                     const currentNum = parseInt((post.details?.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
                     const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
-                    
                     const remainingDays = getRemainingDays(post.details?.endDate);
                     const daysBadge = remainingDays !== null ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-clock mr-1"></i>あと${remainingDays}日</span>` : '';
 
                     subBadge = `<span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-chart-line mr-1"></i>${percent}%達成</span>${daysBadge}`;
-                    
                     summaryText = post.details?.useOfFunds || post.details?.overview || '';
 
-                    // 1. 進捗メーター
                     cfProgressBar = `
                         <div class="mt-3 pt-3 border-t border-slate-800/60">
                             <div class="flex justify-between text-[11px] font-bold mb-1">
@@ -419,7 +494,6 @@
                             </div>
                             <span class="text-[10px] text-slate-500">${post.date || ''}</span>
                         </div>
-                        
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex-grow">
                                 <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
@@ -456,15 +530,13 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集終了日（カウントダウン用）</label>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集終了日</label>
                         <input type="date" id="cf-enddate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">資金の使い道 <span class="text-orange-500">*</span></label>
                         <textarea id="cf-use" rows="2" required placeholder="集まった資金の使い道を記載" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
-
-                    <!-- 2. リターン設定エリア -->
                     <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60 space-y-2">
                         <label class="block text-xs font-bold text-amber-400 mb-1"><i class="fa-solid fa-gift mr-1"></i>リターン（返礼品）の設定</label>
                         <div class="grid grid-cols-3 gap-2">
@@ -472,11 +544,6 @@
                             <input type="text" id="cf-return-title" placeholder="リターン名" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
                         </div>
                         <textarea id="cf-return-desc" rows="2" placeholder="リターンの詳細内容やお届け予定" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">目標達成後の使い道・ネクストゴール（任意）</label>
-                        <textarea id="cf-next" rows="2" placeholder="目標金額を超えた場合の追加挑戦" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">プロジェクトの想い・概要</label>
@@ -491,15 +558,11 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">勤務形態・報酬条件 <span class="text-orange-500">*</span></label>
-                        <input type="text" id="job-type" required placeholder="例: 完全リモート / 成果報酬 / プロボノなど" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                        <input type="text" id="job-type" required placeholder="例: 完全リモート / 成果報酬など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">求めるスキル・応募条件 <span class="text-orange-500">*</span></label>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">求めるスキル・条件 <span class="text-orange-500">*</span></label>
                         <textarea id="job-skills" rows="3" required placeholder="必須スキル、歓迎要件など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">募集背景・詳細説明</label>
-                        <textarea id="job-overview" rows="3" placeholder="どんなチームか、どのような挑戦を一緒に行うかを記載" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                 `;
             } else {
@@ -509,20 +572,22 @@
                         <textarea id="biz-business" rows="3" required placeholder="行っている事業や取り組んでいる活動内容" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">解決したい課題・目指すビジョン <span class="text-orange-500">*</span></label>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">目指すビジョン <span class="text-orange-500">*</span></label>
                         <textarea id="biz-vision" rows="3" required placeholder="どのような未来を目指しているか" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">補足・詳細メッセージ</label>
-                        <textarea id="biz-overview" rows="2" placeholder="自由記述メッセージ" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"></textarea>
                     </div>
                 `;
             }
         };
 
-        // 新規投稿 / 編集保存処理
+        // 投稿・編集保存
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!currentUser && !editingPostId) {
+                alert('投稿するにはログインが必要です');
+                loginWithGoogle();
+                return;
+            }
+
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.innerText = "処理中...";
@@ -540,7 +605,6 @@
                         currentAmount: document.getElementById('cf-current').value || '0',
                         endDate: document.getElementById('cf-enddate').value,
                         useOfFunds: document.getElementById('cf-use').value,
-                        nextGoal: document.getElementById('cf-next').value,
                         overview: document.getElementById('cf-overview').value,
                         returnPrice: document.getElementById('cf-return-price')?.value || '',
                         returnTitle: document.getElementById('cf-return-title')?.value || '',
@@ -550,28 +614,20 @@
                     detailsObj = {
                         role: document.getElementById('job-role').value,
                         workType: document.getElementById('job-type').value,
-                        skills: document.getElementById('job-skills').value,
-                        overview: document.getElementById('job-overview').value
+                        skills: document.getElementById('job-skills').value
                     };
                 } else {
                     detailsObj = {
                         business: document.getElementById('biz-business').value,
-                        vision: document.getElementById('biz-vision').value,
-                        overview: document.getElementById('biz-overview').value
+                        vision: document.getElementById('biz-vision').value
                     };
                 }
 
                 if (editingPostId) {
                     const postRef = doc(db, "posts", editingPostId);
-                    const updateData = {
-                        title: title,
-                        category: cat,
-                        url: url,
-                        details: detailsObj
-                    };
+                    const updateData = { title: title, category: cat, url: url, details: detailsObj };
 
                     if (imageFile) {
-                        submitBtn.innerText = "画像アップロード中...";
                         const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
                         await uploadBytes(storageRef, imageFile);
                         updateData.imageUrl = await getDownloadURL(storageRef);
@@ -582,7 +638,6 @@
                 } else {
                     let imageUrl = '';
                     if (imageFile) {
-                        submitBtn.innerText = "画像アップロード中...";
                         const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
                         await uploadBytes(storageRef, imageFile);
                         imageUrl = await getDownloadURL(storageRef);
@@ -591,7 +646,8 @@
                     await addDoc(collection(db, "posts"), {
                         title: title,
                         category: cat,
-                        author: "山口 功夢",
+                        author: currentUser.displayName || "山口 功夢",
+                        uid: currentUser.uid,
                         url: url,
                         imageUrl: imageUrl,
                         cheers: 0,
@@ -609,148 +665,95 @@
                 onCategoryChange();
             } catch (error) {
                 console.error("Error saving document: ", error);
-                alert('保存エラーが発生しました。もう一度お試しください。');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "無料掲載枠（1回分）を消費して投稿する";
+                submitBtn.innerText = "掲載枠を消費して投稿する";
             }
         });
 
-        // 4. サポーターメッセージ追加機能
+        // SNSシェア機能
+        window.shareToX = function() {
+            if (!activePostId) return;
+            const post = postsList.find(p => p.id === activePostId);
+            const text = encodeURIComponent(`【Globiz】挑戦プロジェクト：「${post.title}」を応援しましょう！\n#Globiz #クラウドファンディング`);
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+        };
+
+        window.shareToLine = function() {
+            if (!activePostId) return;
+            const post = postsList.find(p => p.id === activePostId);
+            const text = encodeURIComponent(`【Globiz】挑戦プロジェクト：「${post.title}」\n${window.location.href}`);
+            window.open(`https://social-plugins.line.me/lineit/share?url=${text}`, '_blank');
+        };
+
+        window.copyShareLink = function() {
+            navigator.clipboard.writeText(window.location.href);
+            alert('ページURLをコピーしました！SNSで共有してください。');
+        };
+
+        // サポーターコメント追加
         window.addSupporterComment = async function() {
             if (!activePostId) return;
             const nameInput = document.getElementById('supporter-name');
             const msgInput = document.getElementById('supporter-msg');
-            const name = nameInput.value.trim() || '匿名サポーター';
+            const name = nameInput.value.trim() || (currentUser ? currentUser.displayName : '匿名サポーター');
             const msg = msgInput.value.trim();
 
-            if (!msg) {
-                alert('メッセージを入力してください');
-                return;
-            }
+            if (!msg) return;
 
             try {
                 const postRef = doc(db, "posts", activePostId);
-                const commentData = {
-                    name: name,
-                    text: msg,
-                    date: new Date().toLocaleDateString('ja-JP') + ' ' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})
-                };
-
                 await updateDoc(postRef, {
-                    comments: arrayUnion(commentData)
+                    comments: arrayUnion({
+                        name: name,
+                        text: msg,
+                        date: new Date().toLocaleDateString('ja-JP') + ' ' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})
+                    })
                 });
-
                 msgInput.value = '';
             } catch (error) {
                 console.error("Error adding comment: ", error);
             }
         };
 
-        // 編集モーダルを開く
-        window.openEditModal = function() {
-            if (!activePostId) return;
-            const post = postsList.find(p => p.id === activePostId);
-            if (!post) return;
+        // 法的表記モーダル制御
+        window.openLegalModal = function(type) {
+            const titleElem = document.getElementById('legal-modal-title');
+            const bodyElem = document.getElementById('legal-modal-body');
 
-            editingPostId = activePostId;
-
-            document.getElementById('modal-title-text').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i>投稿を編集`;
-            document.getElementById('submit-btn').innerText = "変更内容を保存する";
-            document.getElementById('post-quota-status').classList.add('hidden');
-            document.getElementById('post-stripe-section').classList.add('hidden');
-            document.getElementById('edit-image-notice').classList.remove('hidden');
-
-            document.getElementById('post-category').value = post.category;
-            onCategoryChange();
-
-            document.getElementById('post-title').value = post.title || '';
-            document.getElementById('post-url').value = post.url || '';
-
-            const details = post.details || {};
-            if (post.category === 'クラファン') {
-                if (document.getElementById('cf-target')) document.getElementById('cf-target').value = details.targetAmount || '';
-                if (document.getElementById('cf-current')) document.getElementById('cf-current').value = details.currentAmount || '0';
-                if (document.getElementById('cf-enddate')) document.getElementById('cf-enddate').value = details.endDate || '';
-                if (document.getElementById('cf-use')) document.getElementById('cf-use').value = details.useOfFunds || '';
-                if (document.getElementById('cf-next')) document.getElementById('cf-next').value = details.nextGoal || '';
-                if (document.getElementById('cf-overview')) document.getElementById('cf-overview').value = details.overview || '';
-                if (document.getElementById('cf-return-price')) document.getElementById('cf-return-price').value = details.returnPrice || '';
-                if (document.getElementById('cf-return-title')) document.getElementById('cf-return-title').value = details.returnTitle || '';
-                if (document.getElementById('cf-return-desc')) document.getElementById('cf-return-desc').value = details.returnDesc || '';
-            } else if (post.category === '求人・募集') {
-                if (document.getElementById('job-role')) document.getElementById('job-role').value = details.role || '';
-                if (document.getElementById('job-type')) document.getElementById('job-type').value = details.workType || '';
-                if (document.getElementById('job-skills')) document.getElementById('job-skills').value = details.skills || '';
-                if (document.getElementById('job-overview')) document.getElementById('job-overview').value = details.overview || '';
+            if (type === 'terms') {
+                titleElem.innerText = "利用規約";
+                bodyElem.innerText = `第1条（適用）\n本規約は、Globiz Inc.（以下「当社」）が提供する本サービスの利用条件を定めるものです。\n\n第2条（掲載および決済）\n本サービスでの投稿にあたり発生する掲載手数料は、決済完了後の返金は原則受け付けておりません。投稿内容はマイページよりいつでも編集・修正が可能です。`;
+            } else if (type === 'privacy') {
+                titleElem.innerText = "プライバシーポリシー";
+                bodyElem.innerText = `当社は、ユーザーの個人情報を適切に管理し、法律に基づく場合を除き第三者に開示いたしません。取得したGoogleアカウント情報および投稿データは、サービスの提供および質の向上のみに利用いたします。`;
             } else {
-                if (document.getElementById('biz-business')) document.getElementById('biz-business').value = details.business || '';
-                if (document.getElementById('biz-vision')) document.getElementById('biz-vision').value = details.vision || '';
-                if (document.getElementById('biz-overview')) document.getElementById('biz-overview').value = details.overview || '';
+                titleElem.innerText = "特定商取引法に基づく表記";
+                bodyElem.innerText = `販売事業者: Globiz Inc.\n運営責任者: 山口 功夢\n所在地: お問い合わせ後遅滞なく開示いたします\n販売価格: 単発掲載 5,000円 / 月額サブスク 5,000円\n引き渡し時期: 決済完了後、即時掲載枠が適用されます\n返品・キャンセル: デジタルコンテンツの特性上、決済後の返金には応じかねます。`;
             }
 
-            closeDetailModal();
-            document.getElementById('post-modal').classList.remove('hidden');
+            document.getElementById('legal-modal').classList.remove('hidden');
         };
 
-        window.cheerPost = async function() {
-            if (!activePostId) return;
-            try {
-                const postRef = doc(db, "posts", activePostId);
-                await updateDoc(postRef, {
-                    cheers: increment(1)
-                });
-                const countElem = document.getElementById('detail-cheers');
-                countElem.innerText = parseInt(countElem.innerText || '0') + 1;
-            } catch (error) {
-                console.error("Error updating cheers: ", error);
-            }
+        window.closeLegalModal = function() {
+            document.getElementById('legal-modal').classList.add('hidden');
         };
 
-        window.deletePost = async function() {
-            if (!activePostId) return;
-            if (!confirm('この投稿を本当に削除しますか？')) return;
-
-            try {
-                await deleteDoc(doc(db, "posts", activePostId));
-                closeDetailModal();
-                alert('投稿を削除しました。');
-            } catch (error) {
-                console.error("Error deleting post: ", error);
-                alert('削除処理でエラーが発生しました。');
-            }
-        };
-
-        window.filterCategory = function(cat) {
-            currentFilter = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-orange-500', 'text-white');
-                btn.classList.add('bg-slate-800', 'text-slate-300');
-            });
-            const activeBtn = document.getElementById(`btn-${cat}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-                activeBtn.classList.add('bg-orange-500', 'text-white');
-            }
-            renderPosts();
-        };
-
-        window.searchPosts = function() { renderPosts(); };
-
+        // モーダル・詳細開閉
         window.openPostModal = function() {
+            if (!currentUser) {
+                alert('投稿するにはGoogleログインが必要です');
+                loginWithGoogle();
+                return;
+            }
             editingPostId = null;
-            document.getElementById('modal-title-text').innerHTML = `<i class="fa-solid fa-rocket text-orange-500 mr-2"></i>新しい挑戦を投稿`;
-            document.getElementById('submit-btn').innerText = "無料掲載枠（1回分）を消費して投稿する";
-            document.getElementById('post-quota-status').classList.remove('hidden');
-            document.getElementById('post-stripe-section').classList.remove('hidden');
-            document.getElementById('edit-image-notice').classList.add('hidden');
             document.getElementById('post-form').reset();
             onCategoryChange();
             document.getElementById('post-modal').classList.remove('hidden');
         };
 
         window.closePostModal = function() {
-            editingPostId = null;
             document.getElementById('post-modal').classList.add('hidden');
         };
 
@@ -762,9 +765,10 @@
             if (!post) return;
             activePostId = id;
 
+            // ログインユーザー自身が作成した投稿の場合のみ「編集・削除」を表示
             const editBtn = document.getElementById('edit-btn');
             const deleteBtn = document.getElementById('delete-btn');
-            if (post.author === "山口 功夢") {
+            if (currentUser && (post.uid === currentUser.uid || post.author === currentUser.displayName || post.author === "山口 功夢")) {
                 editBtn.classList.remove('hidden');
                 deleteBtn.classList.remove('hidden');
             } else {
@@ -782,24 +786,12 @@
             }
 
             document.getElementById('detail-category').innerText = post.category;
-            
-            // 残り日数バッジ
-            const daysBadge = document.getElementById('detail-days-badge');
-            const remainingDays = getRemainingDays(post.details?.endDate);
-            if (post.category === 'クラファン' && remainingDays !== null) {
-                daysBadge.innerText = `残り ${remainingDays}日`;
-                daysBadge.classList.remove('hidden');
-            } else {
-                daysBadge.classList.add('hidden');
-            }
-
             document.getElementById('detail-title').innerText = post.title;
             document.getElementById('detail-author').innerText = `投稿者: ${post.author || '匿名'} (${post.date || ''})`;
             document.getElementById('detail-cheers').innerText = post.cheers || 0;
 
             const container = document.getElementById('detail-dynamic-content');
             container.innerHTML = '';
-
             const details = post.details || {};
 
             if (post.category === 'クラファン') {
@@ -807,19 +799,7 @@
                 const currentNum = parseInt((details.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
                 const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
 
-                const returnHtml = details.returnTitle ? `
-                    <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-4 rounded-xl">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-amber-400 font-bold text-xs"><i class="fa-solid fa-gift mr-1.5"></i>リターン（返礼品）</span>
-                            <span class="text-amber-300 font-black text-sm">¥${formatMoney(details.returnPrice)}</span>
-                        </div>
-                        <p class="text-xs font-bold text-white mb-1">${details.returnTitle}</p>
-                        <p class="text-[11px] text-slate-300 whitespace-pre-wrap">${details.returnDesc}</p>
-                    </div>
-                ` : '';
-
                 container.innerHTML = `
-                    <!-- 1. 進捗メーター（詳細） -->
                     <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl space-y-2">
                         <div class="flex justify-between items-end">
                             <div>
@@ -835,79 +815,33 @@
                             <div class="bg-gradient-to-r from-orange-500 to-amber-400 h-2 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
                         </div>
                     </div>
-
-                    ${returnHtml}
-
                     <div>
                         <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-coins text-orange-400 mr-1.5"></i>資金の使い道</h4>
                         <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.useOfFunds || '-'}</div>
                     </div>
-                    ${details.nextGoal ? `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-flag text-emerald-400 mr-1.5"></i>ネクストゴール・使い道</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.nextGoal}</div>
-                    </div>` : ''}
-                    ${details.overview ? `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-align-left text-blue-400 mr-1.5"></i>プロジェクト概要・想い</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.overview}</div>
-                    </div>` : ''}
-                `;
-            } else if (post.category === '求人・募集') {
-                container.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                            <p class="text-[11px] text-blue-400 font-bold mb-1"><i class="fa-solid fa-user-tag mr-1.5"></i>募集職種・役割</p>
-                            <p class="text-xs font-bold text-white">${details.role || '-'}</p>
-                        </div>
-                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                            <p class="text-[11px] text-emerald-400 font-bold mb-1"><i class="fa-solid fa-clock mr-1.5"></i>勤務形態・報酬</p>
-                            <p class="text-xs font-bold text-white">${details.workType || '-'}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-check-double text-purple-400 mr-1.5"></i>求めるスキル・条件</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.skills || '-'}</div>
-                    </div>
-                    ${details.overview ? `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-circle-info text-orange-400 mr-1.5"></i>募集背景・チーム紹介</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.overview}</div>
-                    </div>` : ''}
                 `;
             } else {
                 container.innerHTML = `
                     <div>
                         <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-building text-purple-400 mr-1.5"></i>事業内容 / 活動概要</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.business || '-'}</div>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.business || details.skills || '-'}</div>
                     </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-eye text-emerald-400 mr-1.5"></i>解決したい課題・目指すビジョン</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.vision || '-'}</div>
-                    </div>
-                    ${details.overview ? `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-comment-dots text-blue-400 mr-1.5"></i>補足メッセージ</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.overview}</div>
-                    </div>` : ''}
                 `;
             }
 
-            // 4. コメント・サポーター一覧表示
             const comments = post.comments || [];
             document.getElementById('comments-count').innerText = comments.length;
             const commentsListElem = document.getElementById('comments-list');
-            
+            commentsListElem.innerHTML = '';
             if (comments.length === 0) {
                 commentsListElem.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-2">まだメッセージはありません</p>`;
             } else {
-                commentsListElem.innerHTML = '';
                 comments.slice().reverse().forEach(c => {
                     const item = document.createElement('div');
                     item.className = "bg-slate-800/40 border border-slate-800 p-2.5 rounded-lg text-xs";
                     item.innerHTML = `
                         <div class="flex justify-between text-[10px] text-slate-400 mb-1">
-                            <span class="font-bold text-slate-300"><i class="fa-solid fa-user-circle mr-1"></i>${c.name}</span>
+                            <span class="font-bold text-slate-300">${c.name}</span>
                             <span>${c.date}</span>
                         </div>
                         <p class="text-slate-200 leading-relaxed">${c.text}</p>
@@ -917,9 +851,8 @@
             }
 
             const urlContainer = document.getElementById('detail-url-container');
-            const urlBtn = document.getElementById('detail-url-btn');
             if (post.url && post.url.trim() !== "") {
-                urlBtn.href = post.url;
+                document.getElementById('detail-url-btn').href = post.url;
                 urlContainer.classList.remove('hidden');
             } else {
                 urlContainer.classList.add('hidden');
@@ -932,6 +865,38 @@
             activePostId = null;
             document.getElementById('detail-modal').classList.add('hidden');
         };
+
+        window.cheerPost = async function() {
+            if (!activePostId) return;
+            try {
+                await updateDoc(doc(db, "posts", activePostId), { cheers: increment(1) });
+            } catch (e) { console.error(e); }
+        };
+
+        window.deletePost = async function() {
+            if (!activePostId || !confirm('この投稿を削除しますか？')) return;
+            try {
+                await deleteDoc(doc(db, "posts", activePostId));
+                closeDetailModal();
+                alert('削除しました');
+            } catch (e) { console.error(e); }
+        };
+
+        window.filterCategory = function(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-500', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            const activeBtn = document.getElementById(`btn-${cat}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+                activeBtn.classList.add('bg-orange-500', 'text-white');
+            }
+            renderPosts();
+        };
+
+        window.searchPosts = function() { renderPosts(); };
     </script>
 </body>
 </html>
