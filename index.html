@@ -183,7 +183,7 @@
                 <i class="fa-solid fa-rocket text-orange-500 mr-2"></i><span id="post-modal-action-label">新しい挑戦を投稿</span>
             </h3>
 
-            <!-- 残枠ステータス（新規投稿時のみ表示） -->
+            <!-- 残枠ステータス -->
             <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
@@ -533,7 +533,7 @@
         let currentSortOrder = 'newest';
         let activePostId = null;
         let activeAuthorUid = null;
-        let editingPostId = null; // 編集モード中の投稿ID
+        let editingPostId = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
@@ -766,7 +766,6 @@
             return isNaN(num) ? '0' : num.toLocaleString();
         }
 
-        // 投稿一覧（ソート機能統合）
         window.renderPosts = function() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
@@ -775,7 +774,6 @@
             const searchValMobile = document.getElementById('search-input-mobile')?.value.toLowerCase() || '';
             const searchVal = searchValPC || searchValMobile;
 
-            // 1. フィルタリング
             let filtered = postsList.filter(post => {
                 const matchCat = (currentCategory === 'all' || post.category === currentCategory);
                 const matchPref = (currentPrefecture === 'all' || post.prefecture === currentPrefecture);
@@ -786,7 +784,6 @@
                 return matchCat && matchPref && matchTag && matchSearch;
             });
 
-            // 2. ソート（並び替え）処理
             if (currentSortOrder === 'cheers') {
                 filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
             } else if (currentSortOrder === 'progress') {
@@ -799,7 +796,7 @@
                     };
                     return getPercent(b) - getPercent(a);
                 });
-            } else { // 'newest'
+            } else {
                 filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             }
 
@@ -914,12 +911,12 @@
                         <textarea id="cf-use" rows="2" required placeholder="資金の使い道を記載" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white"></textarea>
                     </div>
                     <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60 space-y-2">
-                        <label class="block text-xs font-bold text-amber-400 mb-1"><i class="fa-solid fa-gift mr-1"></i>リターン（返礼品）の設定</label>
+                        <label class="block text-xs font-bold text-amber-400 mb-1"><i class="fa-solid fa-gift mr-1"></i>リターン（返礼品・特典）の説明</label>
                         <div class="grid grid-cols-3 gap-2">
-                            <input type="number" id="cf-return-price" placeholder="支援額(円)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                            <input type="number" id="cf-return-price" placeholder="支援目安額(円)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
                             <input type="text" id="cf-return-title" placeholder="リターン名" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
                         </div>
-                        <textarea id="cf-return-desc" rows="2" placeholder="リターンの詳細内容" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></textarea>
+                        <textarea id="cf-return-desc" rows="2" placeholder="リターンの詳細内容や提供条件" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></textarea>
                     </div>
                 `;
             } else if (cat === '求人・募集') {
@@ -936,7 +933,6 @@
             }
         };
 
-        // 投稿フォーム送信（新規 ＆ 編集の両方に対応）
         document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
@@ -972,7 +968,6 @@
                 const authorName = (userProfileData && userProfileData.displayName) ? userProfileData.displayName : currentUser.displayName;
 
                 if (editingPostId) {
-                    // 編集更新処理
                     await updateDoc(doc(db, "posts", editingPostId), {
                         title: title,
                         category: cat,
@@ -983,7 +978,6 @@
                     });
                     alert('投稿を更新しました！');
                 } else {
-                    // 新規作成処理
                     await addDoc(collection(db, "posts"), {
                         title: title,
                         category: cat,
@@ -1011,7 +1005,6 @@
             }
         });
 
-        // 記事編集モーダルを開く
         window.openEditPostModal = function() {
             if (!activePostId) return;
             const post = postsList.find(p => p.id === activePostId);
@@ -1052,33 +1045,6 @@
             }
 
             document.getElementById('post-modal').classList.remove('hidden');
-        };
-
-        window.supportCrowdfundingReturn = async function() {
-            if (!activePostId) return;
-            if (!currentUser) { alert('支援するにはログインが必要です'); loginWithGoogle(); return; }
-
-            const post = postsList.find(p => p.id === activePostId);
-            if (!post || post.category !== 'クラファン') return;
-
-            const returnPrice = parseInt(post.details?.returnPrice || '0');
-            if (returnPrice <= 0) { alert('このプロジェクトにはリターン金額が設定されていません'); return; }
-
-            if (confirm(`「${post.details?.returnTitle || 'リターン'}」（¥${formatMoney(returnPrice)}）でプロジェクトを支援しますか？`)) {
-                try {
-                    const postRef = doc(db, "posts", activePostId);
-                    const currentAmt = parseInt((post.details?.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
-                    const newAmt = currentAmt + returnPrice;
-
-                    await updateDoc(postRef, {
-                        "details.currentAmount": newAmt.toString()
-                    });
-
-                    alert(`ありがとうございます！¥${formatMoney(returnPrice)} の支援が完了しました！`);
-                } catch (e) {
-                    console.error("Support Error:", e);
-                }
-            }
         };
 
         window.openUserProfileByUid = async function(uid, event) {
@@ -1139,6 +1105,16 @@
             const isBookmarked = userBookmarks.includes(post.id);
             document.getElementById('bookmark-icon').className = isBookmarked ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-amber-400";
 
+            // プロジェクトURLボタンの制御
+            const urlContainer = document.getElementById('detail-url-container');
+            const urlBtn = document.getElementById('detail-url-btn');
+            if (post.url) {
+                urlBtn.href = post.url;
+                urlContainer.classList.remove('hidden');
+            } else {
+                urlContainer.classList.add('hidden');
+            }
+
             const container = document.getElementById('detail-dynamic-content');
             container.innerHTML = '';
             const details = post.details || {};
@@ -1148,17 +1124,15 @@
                 const currentNum = parseInt((details.currentAmount || '0').replace(/[^0-9]/g, '')) || 0;
                 const percent = Math.min(Math.round((currentNum / targetNum) * 100), 999);
 
+                // 返礼品表示（ダミー支援ボタンは排除し、情報提示のみ）
                 const returnSectionHtml = details.returnTitle ? `
                     <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/30 p-4 rounded-xl space-y-2 mt-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-gift mr-1.5"></i>リターン（返礼品）</span>
+                            <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-gift mr-1.5"></i>リターン（返礼品・特典）</span>
                             <span class="text-sm font-black text-white">¥${formatMoney(details.returnPrice)}</span>
                         </div>
                         <h5 class="text-xs font-bold text-white">${details.returnTitle}</h5>
                         <p class="text-[11px] text-slate-300 leading-relaxed">${details.returnDesc || ''}</p>
-                        <button onclick="supportCrowdfundingReturn()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-2 rounded-xl text-xs shadow-lg shadow-orange-500/20 transition mt-2">
-                            このリターンで支援する（¥${formatMoney(details.returnPrice)}）
-                        </button>
                     </div>
                 ` : '';
 
@@ -1253,7 +1227,7 @@
 
         window.openPostModal = function() {
             if (!currentUser) { alert('投稿するにはログインが必要です'); loginWithGoogle(); return; }
-            editingPostId = null; // 新規モードリセット
+            editingPostId = null;
             document.getElementById('post-form').reset();
             document.getElementById('post-modal-action-label').innerText = "新しい挑戦を投稿";
             document.getElementById('submit-btn').innerText = "掲載枠を消費して投稿する";
