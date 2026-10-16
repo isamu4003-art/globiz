@@ -431,7 +431,22 @@
                     <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
                 </a>
             </div>
+　　　　　　　　<!-- サポーターからの応援メッセージ・コメントエリア -->
+<div class="mt-6 pt-6 border-t border-slate-800">
+    <h3 class="text-xs font-bold text-slate-300 mb-3"><i class="fa-solid fa-comments text-orange-400 mr-1.5"></i>応援メッセージ</h3>
+    
+    <!-- メッセージ投稿フォーム -->
+    <form onsubmit="addCheerMessage(event)" class="flex gap-2 mb-4">
+        <input type="text" id="cheer-message-input" placeholder="応援メッセージを入力..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500">
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shrink-0">送信</button>
+    </form>
 
+    <!-- 投稿されたメッセージの一覧表示エリア -->
+    <div id="detail-comments-list" class="space-y-2 max-h-40 overflow-y-auto">
+        <!-- JavaScriptでここにコメントが動的に描画されます -->
+    </div>
+</div>
+            
             <!-- ★進捗・開発ログ（ビルド・イン・パブリック）タイムラインセクション★ -->
             <div id="progress-logs-section" class="mb-6 pt-4 border-t border-slate-800">
                 <div class="flex justify-between items-center mb-3">
@@ -1622,7 +1637,46 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                     console.error('Failed to copy: ', err);
                 });
             };
+// 応援メッセージ（コメント）の送信処理
+            window.addCheerMessage = async function(event) {
+                event.preventDefault();
+                if (!currentUser) {
+                    alert("応援メッセージを送信するにはログインが必要です。");
+                    loginWithGoogle();
+                    return;
+                }
+                if (!activePostId) return;
 
+                const inputElem = document.getElementById('cheer-message-input');
+                const text = inputElem.value.trim();
+                if (!text) return;
+
+                try {
+                    const postRef = doc(db, "posts", activePostId);
+                    const post = postsList.find(p => p.id === activePostId);
+                    if (!post) return;
+
+                    // 既存のコメント配列に新しいメッセージを追加
+                    const newComment = {
+                        name: currentUser.displayName || "名無しサポーター",
+                        text: text,
+                        date: new Date().toLocaleDateString('ja-JP')
+                    };
+
+                    const updatedComments = post.comments ? [...post.comments, newComment] : [newComment];
+
+                    await updateDoc(postRef, {
+                        comments: updatedComments
+                    });
+
+                    // 入力欄をクリア
+                    inputElem.value = "";
+                    alert("💬 応援メッセージを送信しました！");
+                } catch (err) {
+                    console.error("Error adding comment: ", err);
+                    alert("メッセージの送信に失敗しました。");
+                }
+            };
         // いいね（応援）処理の修正
         window.cheerPost = async function() {
             if (!activePostId) return;
