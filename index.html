@@ -1324,75 +1324,108 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
             }
         });
 
-        // 進捗ログ追加処理
-        window.addProgressLog = async function(e) {
-            e.preventDefault();
-            if (!activePostId || !currentUser) return;
+ // 1. 新しい進捗ログ・アップデートの追加
+window.addProgressLog = async function(event) {
+    event.preventDefault();
+    if (!currentUser) {
+        alert("ログインしてください。");
+        return;
+    }
+    if (!activePostId) return;
 
-            const post = postsList.find(p => p.id === activePostId);
-            if (!post || post.uid !== currentUser.uid) return;
+    const titleInput = document.getElementById('log-title-input');
+    const descInput = document.getElementById('log-desc-input');
+    
+    const title = titleInput ? titleInput.value.trim() : "";
+    const description = descInput ? descInput.value.trim() : "";
 
-            const addLogBtn = document.getElementById('add-log-btn');
-            addLogBtn.disabled = true;
-            addLogBtn.innerText = "アプデを投稿中...";
+    if (!title || !description) {
+        alert("タイトルと詳細を入力してください。");
+        return;
+    }
 
-            const title = document.getElementById('log-title').value.trim();
-            const text = document.getElementById('log-text').value.trim();
-            const fileInput = document.getElementById('log-image');
-            const file = fileInput.files[0];
-            let logImgUrl = "";
+    try {
+        // posts/{postId}/logs サブコレクションへ追加
+        const logsRef = collection(db, "posts", activePostId, "logs");
+        await addDoc(logsRef, {
+            uid: currentUser.uid,
+            title: title,
+            description: description,
+            createdAt: serverTimestamp() // 正確なサーバー時刻
+        });
 
-            try {
-                if (file) {
-                    const storageRef = ref(storage, `logs/${Date.now()}_${file.name}`);
-                    const uploadSnap = await uploadBytes(storageRef, file);
-                    logImgUrl = await getDownloadURL(uploadSnap.ref);
-                }
+        if (titleInput) titleInput.value = "";
+        if (descInput) descInput.value = "";
 
-                const newLog = {
-                    id: Date.now().toString(),
-                    title: title,
-                    text: text,
-                    imageUrl: logImgUrl,
-                    date: new Date().toLocaleDateString('ja-JP'),
-                    timestamp: Date.now()
-                };
+        alert("🚀 進捗ログを投稿しました！");
+        // タイムラインを再読み込み
+        loadProgressLogs(activePostId);
+    } catch (err) {
+        console.error("Error adding progress log: ", err);
+        alert("進捗ログの投稿に失敗しました。");
+    }
+};
 
-                const postRef = doc(db, "posts", activePostId);
-                await updateDoc(postRef, {
-                    progressLogs: arrayUnion(newLog),
-                    lastUpdatedAt: Date.now()
-                });
+// 2. 進捗ログをサブコレクションから取得してタイムラインに表示
+async function loadProgressLogs(postId) {
+    const logsListEl = document.getElementById('progress-logs-list'); // タイムラインの表示先要素ID（適宜既存のIDに合わせて調整）
+    if (!logsListEl) return;
 
-                document.getElementById('add-log-form').reset();
-                alert("進捗ログを追加しました！");
-            } catch (err) {
-                alert("進捗ログの追加に失敗しました: " + err.message);
-            } finally {
-                addLogBtn.disabled = false;
-                addLogBtn.innerText = "進捗ログをタイムラインに投稿する";
-            }
-        };
-        window.deleteProgressLog = async function(index) {
-                if (!currentUser) return;
-                if (!activePostId) return;
+    logsListEl.innerHTML = '<p class="text-xs text-slate-500">読み込み中...</p>';
 
-                if (!confirm("この進捗ログを削除してもよろしいですか？")) return;
+    try {
+        const logsRef = collection(db, "posts", postId, "logs");
+        const q = query(logsRef, orderBy("createdAt", "desc")); // 新しい順
+        const snapshot = await getDocs(q);
 
-                try {
-                    const postRef = doc(db, "posts", activePostId);
-                    const post = postsList.find(p => p.id === activePostId);
-                    if (!post || !post.logs) return;
+        if (snapshot.empty) {
+            logsListEl.innerHTML = '<p class="text-xs text-slate-500">まだ進捗ログはありません。</p>';
+            return;
+        }
 
-                    const updatedLogs = post.logs.filter((_, i) => i !== index);
-                    await updateDoc(postRef, { logs: updatedLogs });
+        let html = '';
+        snapshot.forEach((docSnap) => {
+            const log = docSnap.data();
+            const logId = docSnap.id;
+            const dateStr = log.createdAt ? log.createdAt.toDate().toLocaleDateString('ja-JP') : '';
 
-                    alert("🗑️ 進捗ログを削除しました。");
-                } catch (err) {
-                    console.error("Error deleting progress log: ", err);
-                    alert("進捗ログの削除に失敗しました。");
-                }
-            };
+            // 投稿者本人のみ削除ボタンを表示
+            const isOwner = currentUser && currentUser.uid === log.uid;
+
+            html += `
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs text-white mb-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-orange-400 text-sm">${escapeHtml(log.title)}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] text-slate-500">${dateStr}</span>
+                            ${isOwner ? `<button onclick="deleteProgressLog('${postId}', '${logId}')" class="text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-slate-300 break-words whitespace-pre-wrap">${escapeHtml(log.description)}</p>
+                </div>
+            `;
+        });
+        logsListEl.innerHTML = html;
+    } catch (err) {
+        console.error("Error loading progress logs:", err);
+        logsListEl.innerHTML = '<p class="text-xs text-red-400">進捗ログの読み込みに失敗しました。</p>';
+    }
+}
+
+// 3. 進捗ログの削除処理
+window.deleteProgressLog = async function(postId, logId) {
+    if (!currentUser) return;
+    if (!confirm("この進捗ログを削除してもよろしいですか？")) return;
+
+    try {
+        await deleteDoc(doc(db, "posts", postId, "logs", logId));
+        alert("🗑️ 進捗ログを削除しました。");
+        loadProgressLogs(postId);
+    } catch (err) {
+        console.error("Error deleting progress log:", err);
+        alert("削除に失敗しました。");
+    }
+};
 
         window.openEditPostModal = function() {
             if (!activePostId) return;
@@ -1699,31 +1732,115 @@ const newComment = {
                     alert("メッセージの送信に失敗しました。");
                 }
             };
-        // 応援メッセージの削除処理
-            window.deleteCheerMessage = async function(index) {
-                if (!currentUser) return;
-                if (!activePostId) return;
+       // 応援メッセージの追加（サブコレクション版）
+window.addCheerMessage = async function(event) {
+    event.preventDefault();
+    if (!currentUser) {
+        alert("ログインしてください。");
+        return;
+    }
+    if (!activePostId) return;
 
-                if (!confirm("この応援メッセージを削除してもよろしいですか？")) return;
+    const input = document.getElementById('cheer-message-input');
+    const text = input.value.trim();
+    if (!text) return;
 
-                try {
-                    const postRef = doc(db, "posts", activePostId);
-                    const post = postsList.find(p => p.id === activePostId);
-                    if (!post || !post.comments) return;
+    const authorName = (typeof userProfileData !== 'undefined' && userProfileData.name) 
+        ? userProfileData.name 
+        : (currentUser.displayName || "名無しサポーター");
 
-                    // 指定されたインデックスのコメントを除外
-                    const updatedComments = post.comments.filter((_, i) => i !== index);
+    try {
+        // posts/{postId}/comments サブコレクションへ追加
+        const commentsRef = collection(db, "posts", activePostId, "comments");
+        await addDoc(commentsRef, {
+            uid: currentUser.uid,
+            name: authorName,
+            text: text,
+            createdAt: serverTimestamp()
+        });
 
-                    await updateDoc(postRef, {
-                        comments: updatedComments
-                    });
+        input.value = "";
+        loadDetailComments(activePostId);
+    } catch (err) {
+        console.error("Error adding comment: ", err);
+        alert("メッセージの投稿に失敗しました。");
+    }
+};
 
-                    alert("🗑️ 応援メッセージを削除しました。");
-                } catch (err) {
-                    console.error("Error deleting comment: ", err);
-                    alert("メッセージの削除に失敗しました。");
-                }
-            };
+// サブコレクションから応援メッセージを取得して描画する関数
+async function loadDetailComments(postId) {
+    const commentsListEl = document.getElementById('detail-comments-list');
+    if (!commentsListEl) return;
+
+    commentsListEl.innerHTML = '<p class="text-xs text-slate-500">読み込み中...</p>';
+
+    try {
+        const commentsRef = collection(db, "posts", postId, "comments");
+        const q = query(commentsRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            commentsListEl.innerHTML = '<p class="text-xs text-slate-500">まだ応援メッセージはありません。</p>';
+            return;
+        }
+
+        let html = '';
+        snapshot.forEach((docSnap) => {
+            const comment = docSnap.data();
+            const commentId = docSnap.id;
+            const dateStr = comment.createdAt ? comment.createdAt.toDate().toLocaleDateString('ja-JP') : '';
+
+            const isOwner = currentUser && currentUser.uid === comment.uid;
+
+            html += `
+                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-xs text-white mb-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-orange-400">${escapeHtml(comment.name)}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] text-slate-500">${dateStr}</span>
+                            ${isOwner ? `<button onclick="deleteSubCollectionComment('${postId}', '${commentId}')" class="text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-slate-300 break-words">${escapeHtml(comment.text)}</p>
+                </div>
+            `;
+        });
+        commentsListEl.innerHTML = html;
+    } catch (err) {
+        console.error("Error loading comments:", err);
+        commentsListEl.innerHTML = '<p class="text-xs text-red-400">メッセージの読み込みに失敗しました。</p>';
+    }
+}
+
+// サブコレクションのコメント削除処理
+window.deleteSubCollectionComment = async function(postId, commentId) {
+    if (!currentUser) return;
+    if (!confirm("この応援メッセージを削除してもよろしいですか？")) return;
+
+    try {
+        await deleteDoc(doc(db, "posts", postId, "comments", commentId));
+        alert("🗑️ 応援メッセージを削除しました。");
+        loadDetailComments(postId);
+    } catch (err) {
+        console.error("Error deleting comment:", err);
+        alert("削除に失敗しました。");
+    }
+};
+
+// 簡易的なHTMLエスケープ
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&'`<>"]/g, (match) => {
+        return {
+            '&': '&amp;',
+            "'": '&#x27;',
+            '`': '&#x60;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+        }[match];
+    });
+}
         // いいね（応援）処理の修正
         window.cheerPost = async function() {
             if (!activePostId) return;
