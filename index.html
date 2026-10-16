@@ -594,22 +594,36 @@
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
             listenToPosts();
-const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('purchased') === 'ticket') {
-                // 少し遅延させて認証状態の確定を待つ
+            const urlParams = new URLSearchParams(window.location.search);
+            const purchasedType = urlParams.get('purchased');
+            
+            if (purchasedType) {
                 setTimeout(async () => {
                     if (currentUser) {
                         try {
                             const userRef = doc(db, "users", currentUser.uid);
-                            await updateDoc(userRef, { paidTickets: increment(1) });
-                            userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
-                            updateQuotaUI();
-                            alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
                             
-                            // URLからパラメータを削除して綺麗にする
+                            if (purchasedType === 'ticket') {
+                                // 単発チケット購入の場合
+                                await updateDoc(userRef, { paidTickets: increment(1) });
+                                userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
+                                alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
+                            } else if (purchasedType === 'sub') {
+                                // 月額サブスクプラン加入の場合（例としてチケットを3枚付与、または会員フラグを付与）
+                                await updateDoc(userRef, { 
+                                    paidTickets: increment(3), // 例: 月額加入特典として3枚付与
+                                    isSubscribed: true         // サブスク会員フラグ
+                                });
+                                userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 3;
+                                userProfileData.isSubscribed = true;
+                                alert("👑 月額プランへのご加入ありがとうございます！特典チケットが3枚追加され、プレミアム会員になりました！");
+                            }
+
+                            updateQuotaUI();
+                            // URLからパラメータを綺麗に消す
                             window.history.replaceState({}, document.title, window.location.pathname);
                         } catch (err) {
-                            console.error("Ticket Add Error:", err);
+                            console.error("Purchase Sync Error:", err);
                         }
                     }
                 }, 1500);
