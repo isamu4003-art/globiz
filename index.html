@@ -1373,6 +1373,26 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                 addLogBtn.innerText = "進捗ログをタイムラインに投稿する";
             }
         };
+        window.deleteProgressLog = async function(index) {
+                if (!currentUser) return;
+                if (!activePostId) return;
+
+                if (!confirm("この進捗ログを削除してもよろしいですか？")) return;
+
+                try {
+                    const postRef = doc(db, "posts", activePostId);
+                    const post = postsList.find(p => p.id === activePostId);
+                    if (!post || !post.logs) return;
+
+                    const updatedLogs = post.logs.filter((_, i) => i !== index);
+                    await updateDoc(postRef, { logs: updatedLogs });
+
+                    alert("🗑️ 進捗ログを削除しました。");
+                } catch (err) {
+                    console.error("Error deleting progress log: ", err);
+                    alert("進捗ログの削除に失敗しました。");
+                }
+            };
 
         window.openEditPostModal = function() {
             if (!activePostId) return;
@@ -1673,6 +1693,31 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                 } catch (err) {
                     console.error("Error adding comment: ", err);
                     alert("メッセージの送信に失敗しました。");
+                }
+            };
+        // 応援メッセージの削除処理
+            window.deleteCheerMessage = async function(index) {
+                if (!currentUser) return;
+                if (!activePostId) return;
+
+                if (!confirm("この応援メッセージを削除してもよろしいですか？")) return;
+
+                try {
+                    const postRef = doc(db, "posts", activePostId);
+                    const post = postsList.find(p => p.id === activePostId);
+                    if (!post || !post.comments) return;
+
+                    // 指定されたインデックスのコメントを除外
+                    const updatedComments = post.comments.filter((_, i) => i !== index);
+
+                    await updateDoc(postRef, {
+                        comments: updatedComments
+                    });
+
+                    alert("🗑️ 応援メッセージを削除しました。");
+                } catch (err) {
+                    console.error("Error deleting comment: ", err);
+                    alert("メッセージの削除に失敗しました。");
                 }
             };
         // いいね（応援）処理の修正
