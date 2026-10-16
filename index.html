@@ -1675,11 +1675,15 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                     if (!post) return;
 
                     // 既存のコメント配列に新しいメッセージを追加
-                    const newComment = {
-                        name: currentUser.displayName || "名無しサポーター",
-                        text: text,
-                        date: new Date().toLocaleDateString('ja-JP')
-                    };
+                    const authorName = (typeof userProfileData !== 'undefined' && userProfileData.name) 
+    ? userProfileData.name 
+    : (currentUser.displayName || "名無しサポーター");
+
+const newComment = {
+    name: authorName,
+    text: text,
+    date: new Date().toLocaleDateString('ja-JP')
+};
 
                     const updatedComments = post.comments ? [...post.comments, newComment] : [newComment];
 
