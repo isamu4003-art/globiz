@@ -187,7 +187,7 @@
             <!-- 残枠ステータス -->
             <div id="post-quota-status" class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 mb-5 text-xs space-y-2">
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>今月の無料掲載枠</span>
+                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-gift text-orange-400 mr-2"></i>初回無料掲載枠</span>
                     <span id="quota-free" class="text-emerald-400 font-bold">1 回</span>
                 </div>
                 <div class="flex justify-between items-center">
@@ -1172,7 +1172,7 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
             // 新規投稿時（編集以外）の掲載枠チェック
             if (!editingPostId) {
                 if (freeCount <= 0 && paidCount <= 0) {
-                    alert('今月の無料掲載枠（1回）を消費済みです。2回目以降の投稿には、掲載チケットの購入または月額プランへの加入が必要です。');
+                    alert('初回無料掲載枠（1回）を消費済みです。2回目以降の投稿には、掲載チケットの購入または月額プランへの加入が必要です。');
                     return;
                 }
             }
