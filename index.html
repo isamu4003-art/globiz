@@ -1596,6 +1596,33 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
 
         window.closeDetailModal = function() { activePostId = null; document.getElementById('detail-modal').classList.add('hidden'); };
 
+        // ★ここにSNSシェア用の関数を追加する
+            window.shareToX = function() {
+                if (!activePostId) return;
+                const post = postsList.find(p => p.id === activePostId);
+                if (!post) return;
+
+                const text = encodeURIComponent(`「${post.title}」を応援しています！ #Globiz #挑戦`);
+                const url = encodeURIComponent(window.location.href);
+                window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+            };
+
+            window.shareToLine = function() {
+                if (!activePostId) return;
+                const post = postsList.find(p => p.id === activePostId);
+                if (!post) return;
+
+                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}`, '_blank');
+            };
+
+            window.copyShareLink = function() {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert("📋 リンクをクリップボードにコピーしました！");
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            };
+
         // いいね（応援）処理の修正
         window.cheerPost = async function() {
             if (!activePostId) return;
