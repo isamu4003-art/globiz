@@ -621,7 +621,7 @@
             });
         });
 
-        async function loadUserProfile(uid, defaultAuthUser) {
+async function loadUserProfile(uid, defaultAuthUser) {
             try {
                 const userRef = doc(db, "users", uid);
                 const userSnap = await getDoc(userRef);
@@ -631,6 +631,10 @@
                     userBookmarks = userProfileData.bookmarks || [];
                     userFollowingProjects = userProfileData.followingProjects || [];
                     userFollowingUsers = userProfileData.followingUsers || [];
+                    
+                    // 既存ユーザーで枠未定義の場合は補完
+                    if (userProfileData.freeQuota === undefined) userProfileData.freeQuota = 1;
+                    if (userProfileData.paidTickets === undefined) userProfileData.paidTickets = 0;
                 } else {
                     userProfileData = {
                         displayName: defaultAuthUser.displayName || "山口 功夢",
@@ -642,7 +646,9 @@
                         websiteUrl: "",
                         bookmarks: [],
                         followingProjects: [],
-                        followingUsers: []
+                        followingUsers: [],
+                        freeQuota: 1, // 初回登録時に無料枠1回付与
+                        paidTickets: 0
                     };
                     await setDoc(userRef, userProfileData);
                 }
@@ -650,9 +656,19 @@
                 renderUserProfileUI();
                 renderBookmarksUI();
                 renderFeedUI();
+                updateQuotaUI(); // 掲載枠UIの更新
             } catch (error) {
                 console.error("User Profile Sync Error:", error);
             }
+        }
+
+        // 掲載残枠UIの更新関数を追加
+        function updateQuotaUI() {
+            if (!userProfileData) return;
+            const freeEl = document.getElementById('quota-free');
+            const paidEl = document.getElementById('quota-paid');
+            if (freeEl) freeEl.innerText = `${userProfileData.freeQuota || 0} 回`;
+            if (paidEl) paidEl.innerText = `${userProfileData.paidTickets || 0} 枚`;
         }
 
         function renderUserProfileUI() {
@@ -1146,13 +1162,24 @@
         };
 
         // 投稿フォーム送信
-        document.getElementById('post-form').addEventListener('submit', async (e) => {
+document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
 
+            const freeCount = userProfileData.freeQuota || 0;
+            const paidCount = userProfileData.paidTickets || 0;
+
+            // 新規投稿時（編集以外）の掲載枠チェック
+            if (!editingPostId) {
+                if (freeCount <= 0 && paidCount <= 0) {
+                    alert('今月の無料掲載枠（1回）を消費済みです。2回目以降の投稿には、掲載チケットの購入または月額プランへの加入が必要です。');
+                    return;
+                }
+            }
+
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
-            submitBtn.innerText = "処理中（画像をアップロード中...）";
+            submitBtn.innerText = "処理中（投稿中...）";
 
             const cat = document.getElementById('post-category').value;
             const pref = document.getElementById('post-prefecture').value;
@@ -1207,6 +1234,7 @@
                     await updateDoc(doc(db, "posts", editingPostId), updatePayload);
                     alert('投稿を更新しました！');
                 } else {
+                    // 新規投稿をFirestoreに追加
                     await addDoc(collection(db, "posts"), {
                         title: title,
                         category: cat,
@@ -1225,7 +1253,19 @@
                         lastUpdatedAt: Date.now(),
                         details: detailsObj
                     });
-                    alert('投稿が完了しました！');
+
+                    // 無料枠または有料チケットを1つ減算して更新
+                    const userRef = doc(db, "users", currentUser.uid);
+                    if (freeCount > 0) {
+                        await updateDoc(userRef, { freeQuota: increment(-1) });
+                        userProfileData.freeQuota -= 1;
+                    } else if (paidCount > 0) {
+                        await updateDoc(userRef, { paidTickets: increment(-1) });
+                        userProfileData.paidTickets -= 1;
+                    }
+                    updateQuotaUI();
+
+                    alert('無料枠を消費して投稿を掲載しました！');
                 }
 
                 closePostModal();
@@ -1517,26 +1557,71 @@
                     commentsListElem.appendChild(item);
                 });
             }
-
+            updateCheerBtnUI(post);
             document.getElementById('detail-modal').classList.remove('hidden');
         };
 
         window.closeDetailModal = function() { activePostId = null; document.getElementById('detail-modal').classList.add('hidden'); };
 
+        // いいね（応援）処理の修正
         window.cheerPost = async function() {
             if (!activePostId) return;
             if (!currentUser) { alert('応援するにはログインが必要です'); loginWithGoogle(); return; }
+            
             const post = postsList.find(p => p.id === activePostId);
             if (!post) return;
 
             const postRef = doc(db, "posts", activePostId);
-            const isLiked = (post.likedUids || []).includes(currentUser.uid);
+            const likedUids = post.likedUids || [];
+            const isLiked = likedUids.includes(currentUser.uid);
+
+            const cheerBtn = document.getElementById('cheer-btn');
+            if (cheerBtn) cheerBtn.disabled = true;
 
             try {
-                if (isLiked) { await updateDoc(postRef, { cheers: increment(-1), likedUids: arrayRemove(currentUser.uid) }); }
-                else { await updateDoc(postRef, { cheers: increment(1), likedUids: arrayUnion(currentUser.uid) }); }
-            } catch (e) {}
+                if (isLiked) {
+                    await updateDoc(postRef, { 
+                        cheers: increment(-1), 
+                        likedUids: arrayRemove(currentUser.uid) 
+                    });
+                } else {
+                    await updateDoc(postRef, { 
+                        cheers: increment(1), 
+                        likedUids: arrayUnion(currentUser.uid) 
+                    });
+                }
+            } catch (e) {
+                console.error("Cheer Error:", e);
+                alert("応援処理に失敗しました: " + e.message);
+            } finally {
+                if (cheerBtn) cheerBtn.disabled = false;
+            }
         };
+
+        // いいねボタンの見た目をリアルタイム更新する関数
+        function updateCheerBtnUI(post) {
+            const cheerIcon = document.getElementById('cheer-icon');
+            const cheerBtnText = document.getElementById('cheer-btn-text');
+            const detailCheers = document.getElementById('detail-cheers');
+
+            if (!post) return;
+
+            if (detailCheers) detailCheers.innerText = post.cheers || 0;
+
+            const isLiked = currentUser && (post.likedUids || []).includes(currentUser.uid);
+
+            if (cheerIcon && cheerBtnText) {
+                if (isLiked) {
+                    cheerIcon.className = "fa-solid fa-heart text-red-500 animate-bounce";
+                    cheerBtnText.innerText = "応援済み";
+                    cheerBtnText.className = "text-red-400 font-bold";
+                } else {
+                    cheerIcon.className = "fa-solid fa-heart text-slate-500";
+                    cheerBtnText.innerText = "応援";
+                    cheerBtnText.className = "text-slate-300 font-bold";
+                }
+            }
+        }
 
         window.deletePost = async function() {
             if (!activePostId || !confirm('削除しますか？')) return;
