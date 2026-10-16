@@ -609,10 +609,14 @@
             listenToPosts();
             const urlParams = new URLSearchParams(window.location.search);
             const purchasedType = urlParams.get('purchased');
-            
+　　　　　　　　history.replaceState(null, '', window.location.pathname);            
             if (purchasedType) {
-                setTimeout(async () => {
-                    if (currentUser) {
+  　　　　　　　　  (async () => {
+        　　　　　　// ログイン完了まで最大10秒待つ
+        　　　　　　for (let i = 0; i < 50 && !currentUser; i++) {
+          　　　　　　  await new Promise(r => setTimeout(r, 200));
+  　　　　　　      }
+      　　　　　　  if (currentUser) {
                         try {
                             const userRef = doc(db, "users", currentUser.uid);
                             
@@ -635,9 +639,10 @@
                             updateQuotaUI();
                             // URLからパラメータを綺麗に消す
                             window.history.replaceState({}, document.title, window.location.pathname);
-                        } catch (err) {
-                            console.error("Purchase Sync Error:", err);
-                        }
+                        } catch (e) {
+  　　　　　　　　　　　　　　　　  console.error(e);
+  　　　　　　　　　　　　　　　　  alert("チケットの反映に失敗しました: " + (e.code || e.message));
+　　　　　　　　　　　　　　　　　}
                     }
                 }, 1500);
             }
