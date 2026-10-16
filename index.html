@@ -594,7 +594,26 @@
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
             listenToPosts();
-
+const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('purchased') === 'ticket') {
+                // 少し遅延させて認証状態の確定を待つ
+                setTimeout(async () => {
+                    if (currentUser) {
+                        try {
+                            const userRef = doc(db, "users", currentUser.uid);
+                            await updateDoc(userRef, { paidTickets: increment(1) });
+                            userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
+                            updateQuotaUI();
+                            alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
+                            
+                            // URLからパラメータを削除して綺麗にする
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                        } catch (err) {
+                            console.error("Ticket Add Error:", err);
+                        }
+                    }
+                }, 1500);
+            }
             onAuthStateChanged(auth, async (user) => {
                 currentUser = user;
                 const loginBtn = document.getElementById('login-btn');
