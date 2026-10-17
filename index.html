@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Globiz - 挑戦と繋がるコミュニティ</title>
+    <meta name="description" content="クラウドファンディング・メンバー募集・事業紹介を掲載できる、挑戦者のためのコミュニティ「Globiz」。初回の掲載は無料。">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Globiz">
+    <meta property="og:title" content="Globiz - 挑戦と繋がるコミュニティ">
+    <meta property="og:description" content="クラウドファンディング・メンバー募集・事業紹介を掲載できる、挑戦者のためのコミュニティ。初回の掲載は無料。">
+    <meta property="og:url" content="https://isamu4003-art.github.io/globiz/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Globiz - 挑戦と繋がるコミュニティ">
+    <meta name="twitter:description" content="クラウドファンディング・メンバー募集・事業紹介を掲載できる、挑戦者のためのコミュニティ。">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -167,7 +176,7 @@
             <span>•</span>
             <button onclick="openLegalModal('tokusho')" class="hover:text-white transition">特定商取引法に基づく表記</button>
         </div>
-        <p>&copy; 2026 Globiz Inc. All rights reserved.</p>
+        <p>&copy; 2026 Globiz. All rights reserved.</p>
     </footer>
 
 
@@ -248,8 +257,22 @@
                     <input type="url" id="post-url" placeholder="https://example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
                 </div>
 
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">応募・問い合わせ先（任意）</label>
+                    <input type="text" id="post-contact" placeholder="メールアドレス または 問い合わせフォームのURL" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
+                    <p class="text-[10px] text-slate-500 mt-1">※ 入力した内容は投稿ページに公開表示されます。</p>
+                </div>
+
                 <!-- 動的フィールドエリア -->
                 <div id="dynamic-fields" class="space-y-4 pt-2 border-t border-slate-800/80"></div>
+
+                <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-3 text-[11px] text-slate-400 leading-relaxed space-y-2">
+                    <p><i class="fa-solid fa-clock text-amber-400 mr-1"></i>掲載期間は投稿から<b class="text-slate-200">30日間</b>です。期間を過ぎると非表示になり、再掲載にはチケット1枚（または無料枠）が必要です。</p>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" id="post-agree" required class="mt-0.5">
+                        <span><a href="#" onclick="openLegalModal('terms'); return false;" class="text-orange-400 underline">利用規約</a>に同意し、虚偽のない内容を掲載します。金額・達成状況などは投稿者の自己申告であり、Globizは内容の真偽を保証しないことを理解しています。</span>
+                    </label>
+                </div>
 
                 <button type="submit" id="submit-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-orange-500/20 mt-2">
                     掲載枠を消費して投稿する
@@ -313,6 +336,18 @@
                             </a>
                         </div>
                     </div>
+
+                    <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-800 mb-4 text-xs space-y-2">
+                        <div class="font-bold text-slate-200"><i class="fa-solid fa-receipt text-emerald-400 mr-1.5"></i>購入履歴</div>
+                        <div id="purchase-history" class="space-y-1 text-[11px] text-slate-400">読み込み中...</div>
+                        <button onclick="openPortal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded-xl transition text-[11px]">
+                            <i class="fa-solid fa-credit-card mr-1 text-amber-400"></i> プランの管理・解約・領収書（Stripe）
+                        </button>
+                    </div>
+
+                    <button id="admin-open-btn" onclick="openAdminModal()" class="hidden w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold py-2.5 rounded-xl transition text-xs mb-2">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> 管理者パネル（通報の確認）
+                    </button>
 
                     <button onclick="toggleProfileEditForm(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 font-bold py-2.5 rounded-xl transition text-xs mb-3 flex items-center justify-center space-x-1.5">
                         <i class="fa-solid fa-user-pen"></i>
@@ -413,6 +448,7 @@
                 <span id="detail-prefecture" class="bg-red-500/10 text-red-400 border border-red-500/20 text-[11px] font-bold px-2.5 py-1 rounded-lg"><i class="fa-solid fa-location-dot mr-1"></i>全国</span>
             </div>
 
+            <div id="detail-status" class="hidden mb-2 text-[11px] font-bold"></div>
             <h3 id="detail-title" class="text-lg font-bold text-white mb-2">タイトル</h3>
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <p id="detail-author" class="text-xs text-slate-400 cursor-pointer hover:text-orange-400 transition" onclick="openAuthorProfile()">投稿者: ---</p>
@@ -433,6 +469,14 @@
             </div>
         
     
+    <!-- 応募・問い合わせ -->
+            <div id="detail-contact-container" class="mb-6 hidden">
+                <a id="detail-contact-btn" href="#" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-paper-plane mr-1.5"></i> 応募・問い合わせ
+                </a>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed mb-6">※ 掲載内容（金額・達成状況・募集条件など）は投稿者の自己申告です。Globizは内容の真偽・安全性を保証しません。金銭のやり取りや応募の際はご自身で十分に確認してください。不審な投稿は「通報」からお知らせください。</p>
+
     <!-- ★進捗・開発ログ（ビルド・イン・パブリック）タイムラインセクション★ -->
             <div id="progress-logs-section" class="mb-6 pt-4 border-t border-slate-800">
                 <div class="flex justify-between items-center mb-3">
@@ -505,6 +549,9 @@
                     </button>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <button id="renew-btn" onclick="renewPost()" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold px-3 py-2 rounded-xl text-xs hidden">再掲載</button>
+                    <button id="admin-hide-btn" onclick="adminToggleHideActive()" class="bg-purple-500/10 text-purple-300 border border-purple-500/30 font-bold px-3 py-2 rounded-xl text-xs hidden">非表示にする</button>
+                    <button id="report-btn" onclick="openReportModal()" class="bg-slate-800 text-slate-400 border border-slate-700 px-3 py-2 rounded-xl text-xs hidden" title="この投稿を通報"><i class="fa-solid fa-flag"></i></button>
                     <button id="edit-btn" onclick="openEditPostModal()" class="bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">編集</button>
                     <button id="delete-btn" onclick="deletePost()" class="bg-red-500/10 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">削除</button>
                     <button onclick="closeDetailModal()" class="bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl">閉じる</button>
@@ -513,6 +560,37 @@
         </div>
     </div>
 
+
+    <!-- 通報 モーダル -->
+    <div id="report-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeReportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-flag text-red-400 mr-1.5"></i>この投稿を通報</h3>
+            <p class="text-[11px] text-slate-400 mb-4">運営が内容を確認し、必要に応じて非表示・削除します。</p>
+            <form id="report-form" onsubmit="submitReport(event)" class="space-y-3">
+                <select id="report-reason" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                    <option>詐欺・虚偽の疑い</option>
+                    <option>誹謗中傷・攻撃的な内容</option>
+                    <option>違法・不適切な内容</option>
+                    <option>スパム・宣伝</option>
+                    <option>著作権・権利侵害</option>
+                    <option>その他</option>
+                </select>
+                <textarea id="report-detail" rows="3" maxlength="500" placeholder="具体的な状況（任意・500文字まで）" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+                <button type="submit" id="report-submit-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition">通報する</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 管理者パネル モーダル -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-shield-halved text-purple-400 mr-1.5"></i>管理者パネル</h3>
+            <p class="text-[11px] text-slate-400 mb-4">未対応の通報一覧です。</p>
+            <div id="admin-reports" class="space-y-3 text-xs text-slate-300">読み込み中...</div>
+        </div>
+    </div>
 
     <!-- 5. 法的表記 モーダル -->
     <div id="legal-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -551,10 +629,12 @@
             increment, 
             arrayUnion,
             arrayRemove,
+            deleteField,
             where,
             query, 
             orderBy 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-functions.js";
         import {
             getStorage,
             ref,
@@ -576,6 +656,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const functions = getFunctions(app, "asia-northeast1");
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
@@ -589,6 +670,42 @@
         let currentTag = 'all';
         let currentSortOrder = 'newest';
         let activePostId = null;
+        let isAdmin = false;
+        let reportTargetId = null;
+        let visibleCount = 12;
+        let lastFilterSig = '';
+        let pendingDeepPost = new URLSearchParams(window.location.search).get('post');
+        const PAGE_SIZE = 12;
+        const DAY = 86400000;
+        const LISTING_DAYS = 30;
+        const LEGACY_BASE = Date.UTC(2026, 9, 17); // 期限導入前の投稿は、この日から30日間は表示
+        const expiryOf = (p) => p.expiresAt || (Math.max(p.createdAt || 0, LEGACY_BASE) + LISTING_DAYS * DAY);
+        const isExpired = (p) => Date.now() > expiryOf(p);
+        const isOwner = (p) => !!(currentUser && p.uid === currentUser.uid);
+        const canSee = (p) => isAdmin || isOwner(p) || (!p.hidden && !isExpired(p));
+        const postUrl = (id) => window.location.origin + window.location.pathname + '?post=' + encodeURIComponent(id);
+        const contactHref = (c) => {
+            c = (c || '').trim();
+            if (!c) return null;
+            if (/^https?:\/\//i.test(c)) { const u = safeUrl(c); return u === '#' ? null : u; }
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)) return 'mailto:' + c;
+            return null;
+        };
+        function checkImage(file) {
+            if (!file) return true;
+            if (!file.type.startsWith('image/')) { alert('画像ファイルを選択してください'); return false; }
+            if (file.size > 3 * 1024 * 1024) { alert('画像は3MB以下のものを選んでください'); return false; }
+            return true;
+        }
+        const INPUT_LIMITS = { 'post-title': 80, 'post-tags': 100, 'post-url': 300, 'post-contact': 120, 'supporter-name': 30, 'supporter-msg': 300,
+            'log-title': 80, 'log-text': 1000, 'edit-display-name': 40, 'edit-bio': 400, 'edit-affiliation': 60, 'edit-twitter': 200, 'edit-website': 200 };
+        function applyInputLimits(root) {
+            Object.entries(INPUT_LIMITS).forEach(([id, n]) => { const el = document.getElementById(id); if (el && el.maxLength < 0) el.maxLength = n; });
+            if (root && root.querySelectorAll) {
+                root.querySelectorAll('textarea').forEach(el => { if (el.maxLength < 0) el.maxLength = 2000; });
+                root.querySelectorAll('input[type="text"]').forEach(el => { if (el.maxLength < 0) el.maxLength = 100; });
+            }
+        }
         let activeAuthorUid = null;
         let editingPostId = null;
         let pendingPurchase = null;
@@ -598,6 +715,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
+            applyInputLimits(document.getElementById('dynamic-fields'));
             listenToPosts();
             pendingPurchase = new URLSearchParams(window.location.search).get('purchased');
             onAuthStateChanged(auth, async (user) => {
@@ -619,6 +737,7 @@
                     loginBtn.classList.remove('hidden');
                     avatarBtn.classList.add('hidden');
                     userProfileData = null;
+                    isAdmin = false;
                     userBookmarks = [];
                     userFollowingProjects = [];
                     userFollowingUsers = [];
@@ -677,13 +796,20 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     userFollowingProjects = userProfileData.followingProjects || [];
                     userFollowingUsers = userProfileData.followingUsers || [];
                     
+                    // メールアドレスは公開ドキュメントから非公開領域へ移す
+                    if ('email' in userProfileData) {
+                        try {
+                            await setDoc(doc(db, "userPrivate", uid), { email: userProfileData.email || defaultAuthUser.email || "" });
+                            await updateDoc(userRef, { email: deleteField() });
+                            delete userProfileData.email;
+                        } catch (e) { console.warn("email migrate skipped", e); }
+                    }
                     // 既存ユーザーで枠未定義の場合は補完
                     if (userProfileData.freeQuota === undefined) userProfileData.freeQuota = 1;
                     if (userProfileData.paidTickets === undefined) userProfileData.paidTickets = 0;
                 } else {
                     userProfileData = {
-                        displayName: defaultAuthUser.displayName || "山口 功夢",
-                        email: defaultAuthUser.email || "",
+                        displayName: defaultAuthUser.displayName || "名無しの挑戦者",
                         photoURL: defaultAuthUser.photoURL || "",
                         bio: "",
                         affiliation: "未記入",
@@ -696,7 +822,10 @@ async function loadUserProfile(uid, defaultAuthUser) {
                         paidTickets: 0
                     };
                     await setDoc(userRef, userProfileData);
+                    try { await setDoc(doc(db, "userPrivate", uid), { email: defaultAuthUser.email || "" }); } catch (e) { console.warn(e); }
                 }
+
+                try { isAdmin = (await getDoc(doc(db, "admins", uid))).exists(); } catch (e) { isAdmin = false; }
 
                 renderUserProfileUI();
                 renderBookmarksUI();
@@ -720,7 +849,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
             if (!userProfileData) return;
 
             document.getElementById('mypage-name').innerText = userProfileData.displayName || 'ユーザー';
-            document.getElementById('mypage-email').innerText = userProfileData.email || '';
+            document.getElementById('mypage-email').innerText = (currentUser && currentUser.email) || '';
             document.getElementById('mypage-bio-preview').innerText = userProfileData.bio || '自己紹介未設定';
             document.getElementById('mypage-affiliation-val').innerText = userProfileData.affiliation || '未記入';
 
@@ -1017,7 +1146,9 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 renderPosts();
                 renderBookmarksUI();
                 renderFeedUI();
-                if (activePostId) openDetailModal(activePostId);
+                if (pendingDeepPost && postsList.some(p => p.id === pendingDeepPost)) {
+                    const id = pendingDeepPost; pendingDeepPost = null; openDetailModal(id);
+                } else if (activePostId) openDetailModal(activePostId);
             });
         }
 
@@ -1042,8 +1173,11 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 const matchSearch = (post.title || '').toLowerCase().includes(searchVal) || 
                                     (post.author || '').toLowerCase().includes(searchVal) ||
                                     (post.tags || []).some(t => t.toLowerCase().includes(searchVal));
-                return matchCat && matchPref && matchTag && matchSearch;
+                return canSee(post) && matchCat && matchPref && matchTag && matchSearch;
             });
+
+            const sig = [currentCategory, currentPrefecture, currentTag, searchVal, currentSortOrder].join('|');
+            if (sig !== lastFilterSig) { visibleCount = PAGE_SIZE; lastFilterSig = sig; }
 
             if (currentSortOrder === 'cheers') {
                 filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
@@ -1081,7 +1215,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 return;
             }
 
-            filtered.forEach(post => {
+            filtered.slice(0, visibleCount).forEach(post => {
                 const card = document.createElement('div');
                 card.className = "bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition flex flex-col justify-between cursor-pointer group relative overflow-hidden";
                 card.onclick = () => openDetailModal(post.id);
@@ -1117,6 +1251,9 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
+                if (post.hidden) subBadge += `<span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md ml-1">非公開</span>`;
+                else if (isExpired(post)) subBadge += `<span class="text-[10px] text-slate-300 bg-slate-500/20 border border-slate-500/30 px-2 py-0.5 rounded-md ml-1">掲載終了</span>`;
+
                 const logsCount = (post.progressLogs || []).length;
                 const logBadge = logsCount > 0 ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-bolt mr-1"></i>アプデ ${logsCount}</span>` : '';
 
@@ -1151,7 +1288,16 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 `;
                 grid.appendChild(card);
             });
+
+            if (filtered.length > visibleCount) {
+                const more = document.createElement('div');
+                more.className = 'col-span-full text-center py-4';
+                more.innerHTML = `<button onclick="showMorePosts()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-6 py-2.5 rounded-xl text-xs transition">もっと見る（残り${filtered.length - visibleCount}件）</button>`;
+                grid.appendChild(more);
+            }
         };
+
+        window.showMorePosts = function() { visibleCount += PAGE_SIZE; renderPosts(); };
 
         window.changeSortOrder = function(val) {
             currentSortOrder = val;
@@ -1204,6 +1350,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     <div><label class="block text-xs font-semibold text-slate-300 mb-1">目指すビジョン <span class="text-orange-500">*</span></label><textarea id="biz-vision" rows="2" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white"></textarea></div>
                 `;
             }
+            applyInputLimits(container);
         };
 
         // 投稿フォーム送信
@@ -1223,6 +1370,10 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                     return;
                 }
             }
+
+            const contact = (document.getElementById('post-contact').value || '').trim();
+            if (contact && !contactHref(contact)) { alert('応募・問い合わせ先は、メールアドレスまたは http(s):// で始まるURLを入力してください'); return; }
+            if (!checkImage(document.getElementById('post-image').files[0])) return;
 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
@@ -1272,6 +1423,7 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                         prefecture: pref,
                         tags: tags,
                         url: url,
+                        contact: contact,
                         details: detailsObj,
                         lastUpdatedAt: Date.now()
                     };
@@ -1292,6 +1444,8 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                         author: authorName,
                         uid: currentUser.uid,
                         url: url,
+                        contact: contact,
+                        expiresAt: Date.now() + LISTING_DAYS * DAY,
                         imageUrl: uploadedImageUrl || "",
                         cheers: 0,
                         likedUids: [],
@@ -1334,6 +1488,7 @@ window.addProgressLog = async function(event) {
             try {
                 let imageUrl = '';
                 const file = document.getElementById('log-image').files[0];
+                if (!checkImage(file)) { btn.disabled = false; return; }
                 if (file) {
                     const snap = await uploadBytes(ref(storage, `logs/${Date.now()}_${file.name}`), file);
                     imageUrl = await getDownloadURL(snap.ref);
@@ -1370,6 +1525,8 @@ window.addProgressLog = async function(event) {
             document.getElementById('post-prefecture').value = post.prefecture || '全国・オンライン';
             document.getElementById('post-title').value = post.title || '';
             document.getElementById('post-url').value = post.url || '';
+            document.getElementById('post-contact').value = post.contact || '';
+            document.getElementById('post-agree').checked = true;
             document.getElementById('post-tags').value = (post.tags || []).join(', ');
 
             onCategoryChange();
@@ -1437,6 +1594,7 @@ window.addProgressLog = async function(event) {
         window.openDetailModal = function(id) {
             const post = postsList.find(p => p.id === id);
             if (!post) return;
+            if (!canSee(post)) { activePostId = null; alert('この投稿は掲載期間が終了したか、非公開になっています'); return; }
             activePostId = id;
             activeAuthorUid = post.uid;
 
@@ -1455,6 +1613,7 @@ window.addProgressLog = async function(event) {
             }
 
             updateFollowProjectBtnUI();
+            applyDetailExtras(post);
 
             const imgContainer = document.getElementById('detail-image-container');
             const detailImg = document.getElementById('detail-image');
@@ -1617,7 +1776,7 @@ window.addProgressLog = async function(event) {
                 if (!post) return;
 
                 const text = encodeURIComponent(`「${post.title}」を応援しています！ #Globiz #挑戦`);
-                const url = encodeURIComponent(window.location.href);
+                const url = encodeURIComponent(postUrl(post.id));
                 window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
             };
 
@@ -1626,11 +1785,11 @@ window.addProgressLog = async function(event) {
                 const post = postsList.find(p => p.id === activePostId);
                 if (!post) return;
 
-                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}`, '_blank');
+                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(postUrl(post.id))}`, '_blank');
             };
 
             window.copyShareLink = function() {
-                navigator.clipboard.writeText(window.location.href).then(() => {
+                navigator.clipboard.writeText(postUrl(activePostId)).then(() => {
                     alert("📋 リンクをクリップボードにコピーしました！");
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
@@ -1749,6 +1908,155 @@ function escapeHtml(str) {
             try { await deleteDoc(doc(db, "posts", activePostId)); closeDetailModal(); alert('削除しました'); } catch (e) { alert('削除に失敗しました: ' + (e.code || e.message)); }
         };
 
+        // ===== 詳細モーダルの追加表示（期限・通報・管理・問い合わせ）=====
+        function applyDetailExtras(post) {
+            const mine = isOwner(post);
+            const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
+            show('delete-btn', mine || isAdmin);
+            show('report-btn', !mine);
+            show('admin-hide-btn', isAdmin);
+            document.getElementById('admin-hide-btn').innerText = post.hidden ? '再表示にする' : '非表示にする';
+            show('renew-btn', mine && isExpired(post));
+
+            const st = document.getElementById('detail-status');
+            const left = Math.ceil((expiryOf(post) - Date.now()) / DAY);
+            let msg = '', cls = '';
+            if (post.hidden) { msg = '🚫 運営により非公開になっています' + (mine ? '（内容の確認が必要です）' : ''); cls = 'text-purple-300'; }
+            else if (isExpired(post)) { msg = '⏰ 掲載期間が終了しています' + (mine ? '（「再掲載」で30日間再び公開できます）' : ''); cls = 'text-slate-300'; }
+            else if (mine) { msg = `⏳ 掲載期限まであと${left}日`; cls = left <= 5 ? 'text-amber-400' : 'text-slate-400'; }
+            st.innerText = msg;
+            st.className = (msg ? '' : 'hidden ') + 'mb-2 text-[11px] font-bold ' + cls;
+
+            const href = contactHref(post.contact);
+            const cc = document.getElementById('detail-contact-container');
+            if (href) { document.getElementById('detail-contact-btn').href = href; cc.classList.remove('hidden'); }
+            else cc.classList.add('hidden');
+        }
+
+        // ===== 再掲載（チケット／無料枠を1つ消費して30日延長）=====
+        window.renewPost = async function() {
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post || !currentUser || !isOwner(post) || !userProfileData) return;
+            const freeCount = Math.max(0, userProfileData.freeQuota || 0);
+            const paidCount = Math.max(0, userProfileData.paidTickets || 0);
+            if (freeCount <= 0 && paidCount <= 0) { alert('再掲載には掲載チケットが必要です。マイページまたは投稿画面から購入してください。'); return; }
+            const usedFree = freeCount > 0;
+            if (!confirm(`${usedFree ? '無料枠' : '掲載チケット'}を1つ消費して、30日間再掲載しますか？`)) return;
+            try {
+                const batch = writeBatch(db);
+                batch.update(doc(db, "posts", post.id), { expiresAt: Date.now() + LISTING_DAYS * DAY, lastUpdatedAt: Date.now() });
+                batch.update(doc(db, "users", currentUser.uid), usedFree ? { freeQuota: increment(-1) } : { paidTickets: increment(-1) });
+                await batch.commit();
+                if (usedFree) userProfileData.freeQuota = freeCount - 1; else userProfileData.paidTickets = paidCount - 1;
+                updateQuotaUI();
+                alert('再掲載しました（30日間）');
+            } catch (e) { alert('再掲載に失敗しました: ' + (e.code || e.message)); }
+        };
+
+        // ===== 通報 =====
+        window.openReportModal = function() {
+            if (!currentUser) { alert('通報にはログインが必要です'); loginWithGoogle(); return; }
+            if (!activePostId) return;
+            reportTargetId = activePostId;
+            document.getElementById('report-form').reset();
+            document.getElementById('report-modal').classList.remove('hidden');
+        };
+        window.closeReportModal = function() { document.getElementById('report-modal').classList.add('hidden'); };
+        window.submitReport = async function(e) {
+            e.preventDefault();
+            const post = postsList.find(p => p.id === reportTargetId);
+            if (!currentUser || !post) return;
+            const btn = document.getElementById('report-submit-btn');
+            btn.disabled = true;
+            try {
+                await addDoc(collection(db, "reports"), {
+                    postId: post.id,
+                    postTitle: String(post.title || '').slice(0, 100),
+                    reporterUid: currentUser.uid,
+                    reason: document.getElementById('report-reason').value,
+                    detail: document.getElementById('report-detail').value.trim().slice(0, 500),
+                    status: 'open',
+                    createdAt: Date.now()
+                });
+                closeReportModal();
+                alert('通報を受け付けました。ご協力ありがとうございます。');
+            } catch (err) { alert('通報に失敗しました: ' + (err.code || err.message)); }
+            finally { btn.disabled = false; }
+        };
+
+        // ===== 管理者パネル =====
+        window.openAdminModal = async function() {
+            if (!isAdmin) return;
+            closeMypageModal();
+            document.getElementById('admin-modal').classList.remove('hidden');
+            await loadAdminReports();
+        };
+        window.closeAdminModal = function() { document.getElementById('admin-modal').classList.add('hidden'); };
+        async function loadAdminReports() {
+            const box = document.getElementById('admin-reports');
+            box.innerHTML = '読み込み中...';
+            try {
+                const snap = await getDocs(query(collection(db, "reports"), where("status", "==", "open")));
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                if (!items.length) { box.innerHTML = '<p class="text-slate-500 text-center py-6">未対応の通報はありません 🎉</p>'; return; }
+                box.innerHTML = '';
+                items.forEach(r => {
+                    const post = postsList.find(p => p.id === r.postId);
+                    const el = document.createElement('div');
+                    el.className = 'bg-slate-800/50 border border-slate-700/60 rounded-xl p-3 space-y-2';
+                    el.innerHTML = `
+                        <div class="font-bold text-white">${esc(r.postTitle || '(タイトルなし)')} ${post ? (post.hidden ? '<span class="text-purple-300 text-[10px]">[非公開中]</span>' : '') : '<span class="text-red-400 text-[10px]">[削除済み]</span>'}</div>
+                        <div class="text-[11px] text-slate-400"><b class="text-amber-400">${esc(r.reason)}</b> / ${esc(new Date(r.createdAt || 0).toLocaleString('ja-JP'))}</div>
+                        ${r.detail ? `<p class="text-[11px] text-slate-300 whitespace-pre-wrap">${esc(r.detail)}</p>` : ''}
+                        <div class="flex flex-wrap gap-2 pt-1"></div>`;
+                    const row = el.lastElementChild;
+                    const mk = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'px-3 py-1.5 rounded-lg text-[11px] font-bold border ' + cls; b.innerText = label; b.onclick = fn; row.appendChild(b); };
+                    if (post) {
+                        mk('投稿を見る', 'bg-slate-800 border-slate-700 text-slate-200', () => { closeAdminModal(); openDetailModal(post.id); });
+                        mk(post.hidden ? '再表示' : '非表示にする', 'bg-purple-500/10 border-purple-500/30 text-purple-300', async () => { await adminSetHidden(post.id, !post.hidden); loadAdminReports(); });
+                        mk('投稿を削除', 'bg-red-500/10 border-red-500/30 text-red-400', async () => { if (!confirm('この投稿を完全に削除しますか？')) return; try { await deleteDoc(doc(db, "posts", post.id)); await resolveReport(r.id); loadAdminReports(); } catch (e) { alert('削除に失敗: ' + (e.code || e.message)); } });
+                    }
+                    mk('対応済みにする', 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', async () => { await resolveReport(r.id); loadAdminReports(); });
+                    box.appendChild(el);
+                });
+            } catch (e) { box.innerHTML = `<p class="text-red-400">読み込みに失敗しました: ${esc(e.code || e.message)}</p>`; }
+        }
+        async function resolveReport(rid) { try { await updateDoc(doc(db, "reports", rid), { status: 'resolved' }); } catch (e) { alert('更新に失敗: ' + (e.code || e.message)); } }
+        async function adminSetHidden(postId, hide) {
+            try { await updateDoc(doc(db, "posts", postId), { hidden: !!hide }); } catch (e) { alert('操作に失敗: ' + (e.code || e.message)); }
+        }
+        window.adminToggleHideActive = async function() {
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post || !isAdmin) return;
+            await adminSetHidden(post.id, !post.hidden);
+        };
+
+        // ===== 購入履歴 / 解約ポータル =====
+        async function loadPurchaseHistory() {
+            const box = document.getElementById('purchase-history');
+            if (!box || !currentUser) return;
+            try {
+                const snap = await getDocs(collection(db, "users", currentUser.uid, "purchases"));
+                const items = snap.docs.map(d => d.data()).sort((a, b) => (b.at?.seconds || 0) - (a.at?.seconds || 0));
+                if (!items.length) { box.innerText = 'まだ購入履歴はありません'; return; }
+                box.innerHTML = items.slice(0, 10).map(p => {
+                    const d = p.at?.toDate ? p.at.toDate().toLocaleDateString('ja-JP') : '';
+                    const st = p.status === 'refunded' ? '<span class="text-red-400">返金済み</span>' : '';
+                    return `<div class="flex justify-between"><span>${esc(d)}　${esc(p.label || '')}（+${esc(p.tickets)}枚）</span><span>${p.amount != null ? '¥' + Number(p.amount).toLocaleString() : ''} ${st}</span></div>`;
+                }).join('');
+            } catch (e) { box.innerText = '履歴を読み込めませんでした'; }
+        }
+        window.openPortal = async function() {
+            if (!currentUser) { alert('ログインが必要です'); return; }
+            try {
+                const res = await httpsCallable(functions, 'createPortalSession')();
+                window.location.href = res.data.url;
+            } catch (e) {
+                if (String(e.code).includes('failed-precondition')) alert('月額プランのご契約が見つかりません。\n単発チケットのみの場合、解約手続きは不要です。領収書はStripeから届くメールをご確認ください。');
+                else alert('ポータルを開けませんでした: ' + (e.message || e.code));
+            }
+        };
+
         window.filterCategory = function(cat) {
             currentCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(b => {
@@ -1778,6 +2086,7 @@ function escapeHtml(str) {
             if (!currentUser) { alert('投稿するにはログインが必要です'); loginWithGoogle(); return; }
             editingPostId = null;
             document.getElementById('post-form').reset();
+            document.getElementById('post-agree').checked = false;
             document.getElementById('post-modal-action-label').innerText = "新しい挑戦を投稿";
             document.getElementById('submit-btn').innerText = "掲載枠を消費して投稿する";
             document.getElementById('post-quota-status').classList.remove('hidden');
@@ -1786,7 +2095,7 @@ function escapeHtml(str) {
             document.getElementById('post-modal').classList.remove('hidden');
         };
         window.closePostModal = function() { editingPostId = null; document.getElementById('post-modal').classList.add('hidden'); };
-        window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); };
+        window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); document.getElementById('admin-open-btn').classList.toggle('hidden', !isAdmin); loadPurchaseHistory(); };
         window.closeMypageModal = function() { toggleProfileEditForm(false); document.getElementById('mypage-modal').classList.add('hidden'); };
         window.openLegalModal = function(t) {
             const L = {
