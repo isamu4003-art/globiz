@@ -262,9 +262,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">応募・問い合わせ先（任意）</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">外部の連絡先（任意）</label>
                     <input type="text" id="post-contact" placeholder="メールアドレス または 問い合わせフォームのURL" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500">
-                    <p class="text-[10px] text-slate-500 mt-1">※ 入力した内容は投稿ページに公開表示されます。</p>
+                    <p class="text-[10px] text-slate-500 mt-1">※ 入力した内容は投稿ページに公開表示されます。<span id="post-contact-job-hint" class="hidden text-emerald-400"><br>求人・メンバー募集では、Globiz内の「応募する」ボタンで応募を受け付けます（応募はメールで届きます）。連絡先を公開したくない場合は空欄で大丈夫です。</span></p>
                 </div>
 
                 <!-- 動的フィールドエリア -->
@@ -354,6 +354,10 @@
                         <span><i class="fa-solid fa-envelope text-sky-400 mr-1.5"></i>お知らせメールを受け取る<br><span class="text-[10px] text-slate-500">公開・非公開の連絡／メッセージ・応援／掲載期限</span></span>
                         <input type="checkbox" id="notify-toggle" checked onchange="toggleEmailNotify(this)">
                     </label>
+
+                    <button onclick="openApplicationsModal(null)" class="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold py-2.5 rounded-xl transition text-xs mb-2">
+                        <i class="fa-solid fa-inbox mr-1"></i> 届いた応募 <span id="apps-badge" class="hidden ml-1 bg-orange-500 text-white rounded-full px-1.5 py-0.5 text-[10px]">0</span>
+                    </button>
 
                     <button id="admin-open-btn" onclick="openAdminModal()" class="hidden w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold py-2.5 rounded-xl transition text-xs mb-2">
                         <i class="fa-solid fa-shield-halved mr-1"></i> 管理者パネル（審査・通報）
@@ -494,7 +498,20 @@
                 <p class="text-[10px] text-slate-500 leading-relaxed">※ 投稿者への寄付・送金ではなく、投稿の掲載期間を延ばすサービスです。決済後の返金はできません。</p>
             </div>
 
-    <!-- 応募・問い合わせ -->
+    <!-- 応募（求人・メンバー募集） -->
+            <div id="detail-apply-container" class="mb-3 hidden">
+                <button id="detail-apply-btn" onclick="openApplyModal()" class="block w-full text-center bg-orange-500 hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-400 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-hand mr-1.5"></i><span id="detail-apply-label">応募する／話を聞いてみたい</span>
+                </button>
+                <p class="text-[10px] text-slate-500 mt-1.5 text-center">フォームから送るだけ。投稿者のメールにそのまま届きます。</p>
+            </div>
+            <div id="detail-apps-container" class="mb-3 hidden">
+                <button onclick="openApplicationsModal(activePostId)" class="block w-full text-center bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold py-2.5 rounded-xl transition text-xs">
+                    <i class="fa-solid fa-inbox mr-1.5"></i>この投稿に届いた応募を見る
+                </button>
+            </div>
+
+    <!-- 応募・問い合わせ（外部の連絡先） -->
             <div id="detail-contact-container" class="mb-6 hidden">
                 <a id="detail-contact-btn" href="#" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-emerald-500/20">
                     <i class="fa-solid fa-paper-plane mr-1.5"></i> 応募・問い合わせ
@@ -621,6 +638,57 @@
             <div id="admin-reports" class="space-y-3 text-xs text-slate-300 mb-6">読み込み中...</div>
             <h4 class="text-xs font-bold text-emerald-300 mb-2">未対応のお問い合わせ</h4>
             <div id="admin-inquiries" class="space-y-3 text-xs text-slate-300">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- 応募フォーム モーダル -->
+    <div id="apply-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-hand text-orange-400 mr-1.5"></i>応募する</h3>
+            <p id="apply-post-title" class="text-[11px] text-slate-400 mb-1 line-clamp-2"></p>
+            <p class="text-[10px] text-slate-500 mb-4">送信した内容と返信先は、投稿者にだけ共有されます。</p>
+            <form id="apply-form" onsubmit="submitApplication(event)" class="space-y-3">
+                <label class="flex items-center space-x-2 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 cursor-pointer">
+                    <input type="checkbox" id="apply-casual">
+                    <span>まずは話を聞いてみたい（正式な応募ではありません）</span>
+                </label>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">自己紹介・応募の理由 <span class="text-orange-500">*</span></label>
+                    <textarea id="apply-intro" rows="4" required maxlength="500" placeholder="例）はじめまして。〇〇をしている△△です。このプロジェクトの□□に共感して応募しました。" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">できること・経験（任意）</label>
+                    <textarea id="apply-ability" rows="2" maxlength="300" placeholder="例）デザイン3年、Figma / 営業経験あり など" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">稼働できる時間の目安（任意）</label>
+                    <select id="apply-hours" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        <option value="">選択しない</option>
+                        <option value="週5時間まで">週5時間まで</option>
+                        <option value="週5〜10時間">週5〜10時間</option>
+                        <option value="週10〜20時間">週10〜20時間</option>
+                        <option value="フルタイム">フルタイム</option>
+                        <option value="相談したい">相談したい</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">返信先（メールアドレスまたはURL） <span class="text-orange-500">*</span></label>
+                    <input type="text" id="apply-contact" required maxlength="120" placeholder="you@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                    <p class="text-[10px] text-slate-500 mt-1">※ 投稿者がこの宛先へ返信します。公開されることはありません。</p>
+                </div>
+                <button type="submit" id="apply-submit-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs transition">応募を送る</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 届いた応募 モーダル -->
+    <div id="applications-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeApplicationsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-inbox text-orange-400 mr-1.5"></i>届いた応募</h3>
+            <p id="applications-sub" class="text-[11px] text-slate-400 mb-4"></p>
+            <div id="applications-list" class="space-y-3 text-xs"></div>
         </div>
     </div>
 
@@ -1374,6 +1442,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
             const cat = document.getElementById('post-category').value;
             const container = document.getElementById('dynamic-fields');
             container.innerHTML = '';
+            document.getElementById('post-contact-job-hint').classList.toggle('hidden', cat !== '求人・募集');
 
             if (cat === 'クラファン') {
                 container.innerHTML = `
@@ -2030,6 +2099,12 @@ function escapeHtml(str) {
             st.innerText = msg;
             st.className = (msg ? '' : 'hidden ') + 'mb-2 text-[11px] font-bold ' + cls;
 
+            const isJob = post.category === '求人・募集';
+            const canApply = isJob && !mine && !post.hidden && !post.pending && !isExpired(post);
+            show('detail-apply-container', canApply);
+            show('detail-apps-container', isJob && mine);
+            if (canApply) refreshApplyBtn(post);
+
             const href = contactHref(post.contact);
             const cc = document.getElementById('detail-contact-container');
             if (href) { document.getElementById('detail-contact-btn').href = href; cc.classList.remove('hidden'); }
@@ -2196,6 +2271,143 @@ function escapeHtml(str) {
             }
         };
 
+        // ===== 応募（求人・メンバー募集） =====
+        const appliedIds = new Set();
+        let appliedLoadedFor = null;
+        async function refreshApplyBtn(post) {
+            const btn = document.getElementById('detail-apply-btn');
+            const lab = document.getElementById('detail-apply-label');
+            const set = (applied) => {
+                btn.disabled = applied;
+                lab.innerText = applied ? '応募済み（投稿者からの連絡をお待ちください）' : '応募する／話を聞いてみたい';
+            };
+            set(false);
+            if (!currentUser) return;
+            try {
+                if (appliedLoadedFor !== currentUser.uid) {
+                    appliedIds.clear();
+                    const snap = await getDocs(query(collection(db, "applications"), where("applicantUid", "==", currentUser.uid)));
+                    snap.forEach(d => appliedIds.add(d.data().postId));
+                    appliedLoadedFor = currentUser.uid;
+                }
+                if (activePostId === post.id) set(appliedIds.has(post.id));
+            } catch (e) { console.warn('応募状況の取得に失敗', e); }
+        }
+        window.openApplyModal = function() {
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post) return;
+            if (!currentUser) { alert('応募にはログインが必要です'); loginWithGoogle(); return; }
+            if (isOwner(post)) return;
+            if (appliedIds.has(post.id)) { alert('この投稿にはすでに応募済みです'); return; }
+            document.getElementById('apply-form').reset();
+            document.getElementById('apply-post-title').innerText = post.title || '';
+            document.getElementById('apply-contact').value = currentUser.email || '';
+            document.getElementById('apply-modal').classList.remove('hidden');
+        };
+        window.closeApplyModal = function() { document.getElementById('apply-modal').classList.add('hidden'); };
+        window.submitApplication = async function(e) {
+            e.preventDefault();
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post || !currentUser) return;
+            const contact = document.getElementById('apply-contact').value.trim();
+            if (!contactHref(contact)) { alert('返信先は、メールアドレスまたは http(s):// で始まるURLを入力してください'); return; }
+            const btn = document.getElementById('apply-submit-btn');
+            btn.disabled = true;
+            try {
+                await setDoc(doc(db, "applications", post.id + '_' + currentUser.uid), {
+                    postId: post.id,
+                    postTitle: String(post.title || '').slice(0, 120),
+                    ownerUid: post.uid,
+                    applicantUid: currentUser.uid,
+                    applicantName: String((userProfileData && userProfileData.displayName) || currentUser.displayName || '匿名').slice(0, 60),
+                    contact: contact.slice(0, 120),
+                    intro: document.getElementById('apply-intro').value.trim().slice(0, 500),
+                    ability: document.getElementById('apply-ability').value.trim().slice(0, 300),
+                    hours: document.getElementById('apply-hours').value,
+                    casual: document.getElementById('apply-casual').checked,
+                    status: 'new',
+                    createdAt: Date.now()
+                });
+                appliedIds.add(post.id);
+                closeApplyModal();
+                refreshApplyBtn(post);
+                alert('応募を送りました。投稿者から、入力した返信先へご連絡があります。');
+            } catch (err) {
+                alert(err.code === 'permission-denied'
+                    ? '応募できませんでした。すでに応募済み、または掲載が終了している可能性があります。'
+                    : '送信に失敗しました: ' + (err.code || err.message));
+            } finally { btn.disabled = false; }
+        };
+
+        // 投稿者: 届いた応募
+        const APP_STATUS = { new: ['新着', 'bg-orange-500 text-white'], read: ['確認済み', 'bg-slate-700 text-slate-200'], replied: ['返信済み', 'bg-emerald-600 text-white'], declined: ['見送り', 'bg-slate-800 text-slate-400'] };
+        let appsCache = [];
+        let appsFilterPost = null;
+        async function fetchMyApplications() {
+            const snap = await getDocs(query(collection(db, "applications"), where("ownerUid", "==", currentUser.uid)));
+            appsCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            return appsCache;
+        }
+        function updateAppsBadge() {
+            const n = appsCache.filter(a => a.status === 'new').length;
+            const b = document.getElementById('apps-badge');
+            b.innerText = n; b.classList.toggle('hidden', n === 0);
+        }
+        async function loadAppsBadge() {
+            if (!currentUser) return;
+            try { await fetchMyApplications(); updateAppsBadge(); } catch (e) { console.warn(e); }
+        }
+        function renderApplications() {
+            const list = document.getElementById('applications-list');
+            const items = appsFilterPost ? appsCache.filter(a => a.postId === appsFilterPost) : appsCache;
+            document.getElementById('applications-sub').innerText = appsFilterPost
+                ? `この投稿への応募：${items.length}件` : `すべての投稿への応募：${items.length}件`;
+            if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">まだ応募は届いていません</p>'; return; }
+            list.innerHTML = items.map(a => {
+                const st = APP_STATUS[a.status] || APP_STATUS.new;
+                const href = contactHref(a.contact);
+                const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : '';
+                const contactHtml = href
+                    ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" class="text-orange-400 hover:underline break-all">${esc(a.contact)}</a>`
+                    : `<span class="break-all">${esc(a.contact)}</span>`;
+                const btn = (s, label) => `<button data-id="${esc(a.id)}" data-st="${s}" onclick="setApplicationStatus(this.dataset.id, this.dataset.st)" class="px-2.5 py-1 rounded-lg border text-[11px] ${a.status === s ? 'border-orange-500 text-orange-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'}">${label}</button>`;
+                return `<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-3.5">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="font-bold text-white">${esc(a.applicantName || '匿名')}${a.casual ? '<span class="ml-1.5 text-[10px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/30 rounded px-1.5 py-0.5">話を聞きたい</span>' : ''}</div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${st[1]}">${st[0]}</span>
+                    </div>
+                    ${appsFilterPost ? '' : `<p class="text-[10px] text-slate-500 mb-1.5 line-clamp-1">投稿: ${esc(a.postTitle)}</p>`}
+                    <p class="text-[10px] text-slate-500 mb-2">${date}${a.hours ? ' ・ 稼働: ' + esc(a.hours) : ''}</p>
+                    <p class="text-slate-200 whitespace-pre-wrap leading-relaxed mb-2">${esc(a.intro)}</p>
+                    ${a.ability ? `<p class="text-slate-300 whitespace-pre-wrap leading-relaxed mb-2"><span class="text-slate-500">できること：</span>${esc(a.ability)}</p>` : ''}
+                    <p class="text-slate-400 mb-2.5">返信先：${contactHtml}</p>
+                    <div class="flex flex-wrap gap-1.5">${btn('read', '確認済み')}${btn('replied', '返信済み')}${btn('declined', '見送り')}</div>
+                </div>`;
+            }).join('');
+        }
+        window.openApplicationsModal = async function(postId) {
+            if (!currentUser) { alert('ログインが必要です'); return; }
+            appsFilterPost = postId || null;
+            document.getElementById('applications-list').innerHTML = '<p class="text-xs text-slate-500 text-center py-6">読み込み中...</p>';
+            document.getElementById('applications-modal').classList.remove('hidden');
+            try {
+                await fetchMyApplications();
+                // 開いた時点で「新着」は「確認済み」にしない（見落とし防止のため、手動で更新する）
+                renderApplications(); updateAppsBadge();
+            } catch (e) {
+                document.getElementById('applications-list').innerHTML = '<p class="text-xs text-red-400 text-center py-6">読み込みに失敗しました</p>';
+            }
+        };
+        window.closeApplicationsModal = function() { document.getElementById('applications-modal').classList.add('hidden'); };
+        window.setApplicationStatus = async function(id, status) {
+            try {
+                await updateDoc(doc(db, "applications", id), { status });
+                const a = appsCache.find(x => x.id === id);
+                if (a) a.status = status;
+                renderApplications(); updateAppsBadge();
+            } catch (e) { alert('更新に失敗しました: ' + (e.code || e.message)); }
+        };
+
         // ===== お問い合わせ =====
         window.openContactModal = function() {
             if (!currentUser) { alert('お問い合わせにはログインが必要です'); loginWithGoogle(); return; }
@@ -2341,7 +2553,7 @@ function escapeHtml(str) {
             document.getElementById('post-modal').classList.remove('hidden');
         };
         window.closePostModal = function() { editingPostId = null; document.getElementById('post-modal').classList.add('hidden'); };
-        window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); document.getElementById('admin-open-btn').classList.toggle('hidden', !isAdmin); loadPurchaseHistory(); };
+        window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); document.getElementById('admin-open-btn').classList.toggle('hidden', !isAdmin); loadPurchaseHistory(); loadAppsBadge(); };
         window.closeMypageModal = function() { toggleProfileEditForm(false); document.getElementById('mypage-modal').classList.add('hidden'); };
         window.openLegalModal = function(t) {
             const L = {
