@@ -175,6 +175,8 @@
             <button onclick="openLegalModal('privacy')" class="hover:text-white transition">プライバシーポリシー</button>
             <span>•</span>
             <button onclick="openLegalModal('tokusho')" class="hover:text-white transition">特定商取引法に基づく表記</button>
+            <span>•</span>
+            <button onclick="openContactModal()" class="hover:text-white transition">お問い合わせ</button>
         </div>
         <p>&copy; 2026 Globiz. All rights reserved.</p>
     </footer>
@@ -267,6 +269,7 @@
                 <div id="dynamic-fields" class="space-y-4 pt-2 border-t border-slate-800/80"></div>
 
                 <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-3 text-[11px] text-slate-400 leading-relaxed space-y-2">
+                    <p><i class="fa-solid fa-user-check text-emerald-400 mr-1"></i>初回無料枠での投稿は、運営の確認後に公開されます。有料チケットでの投稿はすぐに公開されます。</p>
                     <p><i class="fa-solid fa-clock text-amber-400 mr-1"></i>掲載期間は投稿から<b class="text-slate-200">30日間</b>です。期間を過ぎると非表示になり、再掲載にはチケット1枚（または無料枠）が必要です。</p>
                     <label class="flex items-start gap-2 cursor-pointer">
                         <input type="checkbox" id="post-agree" required class="mt-0.5">
@@ -345,8 +348,13 @@
                         </button>
                     </div>
 
+                    <label class="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-800 mb-4 text-xs text-slate-300 cursor-pointer">
+                        <span><i class="fa-solid fa-envelope text-sky-400 mr-1.5"></i>お知らせメールを受け取る<br><span class="text-[10px] text-slate-500">公開・非公開の連絡／メッセージ・応援／掲載期限</span></span>
+                        <input type="checkbox" id="notify-toggle" checked onchange="toggleEmailNotify(this)">
+                    </label>
+
                     <button id="admin-open-btn" onclick="openAdminModal()" class="hidden w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold py-2.5 rounded-xl transition text-xs mb-2">
-                        <i class="fa-solid fa-shield-halved mr-1"></i> 管理者パネル（通報の確認）
+                        <i class="fa-solid fa-shield-halved mr-1"></i> 管理者パネル（審査・通報）
                     </button>
 
                     <button onclick="toggleProfileEditForm(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 font-bold py-2.5 rounded-xl transition text-xs mb-3 flex items-center justify-center space-x-1.5">
@@ -356,6 +364,9 @@
 
                     <button onclick="logoutFromGoogle()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2 rounded-xl transition text-xs mb-2">
                         ログアウト
+                    </button>
+                    <button onclick="deleteMyAccount()" class="w-full text-slate-500 hover:text-red-400 text-[11px] py-2 transition underline">
+                        アカウントを削除（退会）
                     </button>
                 </div>
 
@@ -449,6 +460,7 @@
             </div>
 
             <div id="detail-status" class="hidden mb-2 text-[11px] font-bold"></div>
+            <div id="detail-history" class="hidden mb-3 bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 space-y-1"></div>
             <h3 id="detail-title" class="text-lg font-bold text-white mb-2">タイトル</h3>
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <p id="detail-author" class="text-xs text-slate-400 cursor-pointer hover:text-orange-400 transition" onclick="openAuthorProfile()">投稿者: ---</p>
@@ -550,6 +562,8 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     <button id="renew-btn" onclick="renewPost()" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold px-3 py-2 rounded-xl text-xs hidden">再掲載</button>
+                    <button id="admin-history-btn" onclick="adminShowHistory()" class="bg-slate-800 text-slate-300 border border-slate-700 font-bold px-3 py-2 rounded-xl text-xs hidden">編集履歴</button>
+                    <button id="admin-approve-btn" onclick="adminApproveActive()" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold px-3 py-2 rounded-xl text-xs hidden">承認して公開</button>
                     <button id="admin-hide-btn" onclick="adminToggleHideActive()" class="bg-purple-500/10 text-purple-300 border border-purple-500/30 font-bold px-3 py-2 rounded-xl text-xs hidden">非表示にする</button>
                     <button id="report-btn" onclick="openReportModal()" class="bg-slate-800 text-slate-400 border border-slate-700 px-3 py-2 rounded-xl text-xs hidden" title="この投稿を通報"><i class="fa-solid fa-flag"></i></button>
                     <button id="edit-btn" onclick="openEditPostModal()" class="bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold px-3 py-2 rounded-xl text-xs hidden">編集</button>
@@ -587,8 +601,27 @@
         <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-shield-halved text-purple-400 mr-1.5"></i>管理者パネル</h3>
-            <p class="text-[11px] text-slate-400 mb-4">未対応の通報一覧です。</p>
-            <div id="admin-reports" class="space-y-3 text-xs text-slate-300">読み込み中...</div>
+            <div id="admin-stats" class="grid grid-cols-3 gap-2 mb-6 text-center text-[11px] text-slate-400">集計を読み込み中...</div>
+            <h4 class="text-xs font-bold text-sky-300 mb-2">確認待ちの投稿（初回無料枠）</h4>
+            <div id="admin-pending" class="space-y-3 text-xs text-slate-300 mb-6"></div>
+            <h4 class="text-xs font-bold text-red-300 mb-2">未対応の通報</h4>
+            <div id="admin-reports" class="space-y-3 text-xs text-slate-300 mb-6">読み込み中...</div>
+            <h4 class="text-xs font-bold text-emerald-300 mb-2">未対応のお問い合わせ</h4>
+            <div id="admin-inquiries" class="space-y-3 text-xs text-slate-300">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- お問い合わせ モーダル -->
+    <div id="contact-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeContactModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-envelope text-sky-400 mr-1.5"></i>お問い合わせ</h3>
+            <p class="text-[11px] text-slate-400 mb-4">不具合・ご要望・決済のご相談などをお送りください。</p>
+            <form id="contact-form" onsubmit="submitInquiry(event)" class="space-y-3">
+                <input type="email" id="contact-email" maxlength="120" placeholder="返信先メールアドレス" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                <textarea id="contact-message" rows="5" required maxlength="1000" placeholder="お問い合わせ内容（1000文字まで）" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+                <button type="submit" id="contact-submit-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-xs transition">送信する</button>
+            </form>
         </div>
     </div>
 
@@ -682,7 +715,9 @@
         const expiryOf = (p) => p.expiresAt || (Math.max(p.createdAt || 0, LEGACY_BASE) + LISTING_DAYS * DAY);
         const isExpired = (p) => Date.now() > expiryOf(p);
         const isOwner = (p) => !!(currentUser && p.uid === currentUser.uid);
-        const canSee = (p) => isAdmin || isOwner(p) || (!p.hidden && !isExpired(p));
+        const canSee = (p) => isAdmin || isOwner(p) || (!p.hidden && !p.pending && !isExpired(p));
+        const SHARE_BASE = 'https://asia-northeast1-globiz-web.cloudfunctions.net/sharePage';
+        const shareUrl = (id) => SHARE_BASE + '?id=' + encodeURIComponent(id);
         const postUrl = (id) => window.location.origin + window.location.pathname + '?post=' + encodeURIComponent(id);
         const contactHref = (c) => {
             c = (c || '').trim();
@@ -850,6 +885,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
 
             document.getElementById('mypage-name').innerText = userProfileData.displayName || 'ユーザー';
             document.getElementById('mypage-email').innerText = (currentUser && currentUser.email) || '';
+            document.getElementById('notify-toggle').checked = userProfileData.emailNotify !== false;
             document.getElementById('mypage-bio-preview').innerText = userProfileData.bio || '自己紹介未設定';
             document.getElementById('mypage-affiliation-val').innerText = userProfileData.affiliation || '未記入';
 
@@ -1146,6 +1182,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 renderPosts();
                 renderBookmarksUI();
                 renderFeedUI();
+                if (isAdmin && !document.getElementById('admin-modal').classList.contains('hidden')) renderAdminPending();
                 if (pendingDeepPost && postsList.some(p => p.id === pendingDeepPost)) {
                     const id = pendingDeepPost; pendingDeepPost = null; openDetailModal(id);
                 } else if (activePostId) openDetailModal(activePostId);
@@ -1251,7 +1288,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
-                if (post.hidden) subBadge += `<span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md ml-1">非公開</span>`;
+                if (post.pending) subBadge += `<span class="text-[10px] text-sky-300 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-md ml-1">審査中</span>`;
+                else if (post.hidden) subBadge += `<span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md ml-1">非公開</span>`;
                 else if (isExpired(post)) subBadge += `<span class="text-[10px] text-slate-300 bg-slate-500/20 border border-slate-500/30 px-2 py-0.5 rounded-md ml-1">掲載終了</span>`;
 
                 const logsCount = (post.progressLogs || []).length;
@@ -1445,6 +1483,7 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                         uid: currentUser.uid,
                         url: url,
                         contact: contact,
+                        pending: usedFree,
                         expiresAt: Date.now() + LISTING_DAYS * DAY,
                         imageUrl: uploadedImageUrl || "",
                         cheers: 0,
@@ -1463,7 +1502,7 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                     await batch.commit();
                     if (usedFree) userProfileData.freeQuota = freeCount - 1; else userProfileData.paidTickets = paidCount - 1;
                     updateQuotaUI();
-                    alert(usedFree ? '無料枠を消費して投稿を掲載しました！' : '掲載チケットを1枚消費して投稿を掲載しました！');
+                    alert(usedFree ? '無料枠で投稿を受け付けました。運営の確認後に公開されます（通常1〜2日）。確認中も、マイページや自分の投稿として見ることができます。' : '掲載チケットを1枚消費して投稿を掲載しました！');
                 }
 
                 closePostModal();
@@ -1776,7 +1815,7 @@ window.addProgressLog = async function(event) {
                 if (!post) return;
 
                 const text = encodeURIComponent(`「${post.title}」を応援しています！ #Globiz #挑戦`);
-                const url = encodeURIComponent(postUrl(post.id));
+                const url = encodeURIComponent(shareUrl(post.id));
                 window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
             };
 
@@ -1785,11 +1824,11 @@ window.addProgressLog = async function(event) {
                 const post = postsList.find(p => p.id === activePostId);
                 if (!post) return;
 
-                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(postUrl(post.id))}`, '_blank');
+                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl(post.id))}`, '_blank');
             };
 
             window.copyShareLink = function() {
-                navigator.clipboard.writeText(postUrl(activePostId)).then(() => {
+                navigator.clipboard.writeText(shareUrl(activePostId)).then(() => {
                     alert("📋 リンクをクリップボードにコピーしました！");
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
@@ -1915,13 +1954,17 @@ function escapeHtml(str) {
             show('delete-btn', mine || isAdmin);
             show('report-btn', !mine);
             show('admin-hide-btn', isAdmin);
+            show('admin-history-btn', isAdmin);
+            document.getElementById('detail-history').classList.add('hidden');
+            show('admin-approve-btn', isAdmin && !!post.pending);
             document.getElementById('admin-hide-btn').innerText = post.hidden ? '再表示にする' : '非表示にする';
             show('renew-btn', mine && isExpired(post));
 
             const st = document.getElementById('detail-status');
             const left = Math.ceil((expiryOf(post) - Date.now()) / DAY);
             let msg = '', cls = '';
-            if (post.hidden) { msg = '🚫 運営により非公開になっています' + (mine ? '（内容の確認が必要です）' : ''); cls = 'text-purple-300'; }
+            if (post.pending) { msg = '🔎 運営の確認待ちです。承認されると一般公開されます。'; cls = 'text-sky-300'; }
+            else if (post.hidden) { msg = '🚫 運営により非公開になっています' + (mine ? '（内容の確認が必要です）' : ''); cls = 'text-purple-300'; }
             else if (isExpired(post)) { msg = '⏰ 掲載期間が終了しています' + (mine ? '（「再掲載」で30日間再び公開できます）' : ''); cls = 'text-slate-300'; }
             else if (mine) { msg = `⏳ 掲載期限まであと${left}日`; cls = left <= 5 ? 'text-amber-400' : 'text-slate-400'; }
             st.innerText = msg;
@@ -1989,6 +2032,9 @@ function escapeHtml(str) {
             if (!isAdmin) return;
             closeMypageModal();
             document.getElementById('admin-modal').classList.remove('hidden');
+            renderAdminPending();
+            loadAdminStats();
+            loadAdminInquiries();
             await loadAdminReports();
         };
         window.closeAdminModal = function() { document.getElementById('admin-modal').classList.add('hidden'); };
@@ -2025,6 +2071,35 @@ function escapeHtml(str) {
         async function adminSetHidden(postId, hide) {
             try { await updateDoc(doc(db, "posts", postId), { hidden: !!hide }); } catch (e) { alert('操作に失敗: ' + (e.code || e.message)); }
         }
+        async function adminApprove(postId) {
+            try { await updateDoc(doc(db, "posts", postId), { pending: false }); } catch (e) { alert('承認に失敗: ' + (e.code || e.message)); }
+        }
+        window.adminApproveActive = async function() {
+            if (!isAdmin || !activePostId) return;
+            await adminApprove(activePostId);
+        };
+        function renderAdminPending() {
+            const box = document.getElementById('admin-pending');
+            if (!box) return;
+            const items = postsList.filter(p => p.pending).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            if (!items.length) { box.innerHTML = '<p class="text-slate-500 text-center py-4">確認待ちの投稿はありません</p>'; return; }
+            box.innerHTML = '';
+            items.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'bg-sky-500/5 border border-sky-500/30 rounded-xl p-3 space-y-2';
+                el.innerHTML = `
+                    <div class="font-bold text-white">${esc(p.title)}</div>
+                    <div class="text-[11px] text-slate-400">${esc(p.category)} / ${esc(p.author || '匿名')} / ${esc(new Date(p.createdAt || 0).toLocaleString('ja-JP'))}</div>
+                    <div class="flex flex-wrap gap-2 pt-1"></div>`;
+                const row = el.lastElementChild;
+                const mk = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'px-3 py-1.5 rounded-lg text-[11px] font-bold border ' + cls; b.innerText = label; b.onclick = fn; row.appendChild(b); };
+                mk('内容を見る', 'bg-slate-800 border-slate-700 text-slate-200', () => { closeAdminModal(); openDetailModal(p.id); });
+                mk('承認して公開', 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', async () => { await adminApprove(p.id); });
+                mk('却下（非公開）', 'bg-purple-500/10 border-purple-500/30 text-purple-300', async () => { if (!confirm('却下して非公開にします（無料枠は戻りません）。よろしいですか？')) return; try { await updateDoc(doc(db, "posts", p.id), { hidden: true, pending: false }); } catch (e) { alert('操作に失敗: ' + (e.code || e.message)); } });
+                mk('削除', 'bg-red-500/10 border-red-500/30 text-red-400', async () => { if (!confirm('この投稿を完全に削除しますか？')) return; try { await deleteDoc(doc(db, "posts", p.id)); } catch (e) { alert('削除に失敗: ' + (e.code || e.message)); } });
+                box.appendChild(el);
+            });
+        }
         window.adminToggleHideActive = async function() {
             const post = postsList.find(p => p.id === activePostId);
             if (!post || !isAdmin) return;
@@ -2046,6 +2121,102 @@ function escapeHtml(str) {
                 }).join('');
             } catch (e) { box.innerText = '履歴を読み込めませんでした'; }
         }
+        // ===== お問い合わせ =====
+        window.openContactModal = function() {
+            if (!currentUser) { alert('お問い合わせにはログインが必要です'); loginWithGoogle(); return; }
+            document.getElementById('contact-form').reset();
+            document.getElementById('contact-email').value = currentUser.email || '';
+            document.getElementById('contact-modal').classList.remove('hidden');
+        };
+        window.closeContactModal = function() { document.getElementById('contact-modal').classList.add('hidden'); };
+        window.submitInquiry = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const btn = document.getElementById('contact-submit-btn');
+            btn.disabled = true;
+            try {
+                await addDoc(collection(db, "inquiries"), {
+                    uid: currentUser.uid,
+                    email: document.getElementById('contact-email').value.trim().slice(0, 120),
+                    message: document.getElementById('contact-message').value.trim().slice(0, 1000),
+                    status: 'open',
+                    createdAt: Date.now()
+                });
+                closeContactModal();
+                alert('送信しました。内容を確認のうえ、ご連絡します。');
+            } catch (err) { alert('送信に失敗しました: ' + (err.code || err.message)); }
+            finally { btn.disabled = false; }
+        };
+
+        // ===== 退会 =====
+        window.deleteMyAccount = async function() {
+            if (!currentUser) return;
+            const t = prompt('アカウントを削除すると、投稿・プロフィール・未使用のチケットがすべて失われ、元に戻せません。\n月額プランに加入中の場合は自動で解約されます。\n\n続けるには「削除」と入力してください。');
+            if (t !== '削除') return;
+            try {
+                await httpsCallable(functions, 'deleteAccount')();
+                alert('アカウントを削除しました。ご利用ありがとうございました。');
+                try { await signOut(auth); } catch (e) {}
+                window.location.href = window.location.pathname;
+            } catch (e) { alert('削除に失敗しました: ' + (e.message || e.code)); }
+        };
+
+        // ===== 管理者: 集計・問い合わせ・編集履歴 =====
+        async function loadAdminStats() {
+            const box = document.getElementById('admin-stats');
+            try {
+                const d = (await httpsCallable(functions, 'adminStats')()).data;
+                const tile = (label, val, cls) => `<div class="bg-slate-800/60 border border-slate-700/60 rounded-xl py-2.5"><div class="text-base font-bold ${cls || 'text-white'}">${esc(val)}</div><div>${esc(label)}</div></div>`;
+                const yen = (n) => '¥' + Number(n || 0).toLocaleString();
+                box.innerHTML = tile('ユーザー', d.users) + tile('投稿', d.posts) + tile('審査待ち', d.pending, d.pending ? 'text-sky-300' : '') +
+                    tile('未対応の通報', d.reports, d.reports ? 'text-red-300' : '') + tile('未対応の問い合わせ', d.inquiries, d.inquiries ? 'text-emerald-300' : '') +
+                    tile('今月の売上', yen(d.revenue.thisMonth), 'text-amber-300') + tile('累計売上（導入後）', yen(d.revenue.total), 'text-amber-300') + tile('決済件数', d.revenue.count);
+            } catch (e) { box.innerText = '集計を読み込めませんでした: ' + (e.message || e.code); }
+        }
+        async function loadAdminInquiries() {
+            const box = document.getElementById('admin-inquiries');
+            try {
+                const snap = await getDocs(query(collection(db, "inquiries"), where("status", "==", "open")));
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                if (!items.length) { box.innerHTML = '<p class="text-slate-500 text-center py-4">未対応のお問い合わせはありません</p>'; return; }
+                box.innerHTML = '';
+                items.forEach(q => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-slate-800/50 border border-slate-700/60 rounded-xl p-3 space-y-2';
+                    el.innerHTML = `<div class="text-[11px] text-slate-400">${esc(new Date(q.createdAt || 0).toLocaleString('ja-JP'))} / 返信先: <b class="text-slate-200">${esc(q.email || '(未入力)')}</b></div><p class="whitespace-pre-wrap text-slate-200">${esc(q.message)}</p>`;
+                    const b = document.createElement('button');
+                    b.className = 'px-3 py-1.5 rounded-lg text-[11px] font-bold border bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                    b.innerText = '対応済みにする';
+                    b.onclick = async () => { try { await updateDoc(doc(db, "inquiries", q.id), { status: 'resolved' }); loadAdminInquiries(); } catch (err) { alert('更新に失敗: ' + (err.code || err.message)); } };
+                    el.appendChild(b);
+                    box.appendChild(el);
+                });
+            } catch (e) { box.innerHTML = `<p class="text-red-400">読み込みに失敗しました: ${esc(e.code || e.message)}</p>`; }
+        }
+        window.adminShowHistory = async function() {
+            if (!isAdmin || !activePostId) return;
+            const box = document.getElementById('detail-history');
+            box.classList.remove('hidden');
+            box.innerText = '履歴を読み込み中...';
+            try {
+                const snap = await getDocs(collection(db, "posts", activePostId, "history"));
+                const items = snap.docs.map(d => d.data()).sort((a, b) => (b.at?.seconds || 0) - (a.at?.seconds || 0));
+                if (!items.length) { box.innerText = '編集履歴はありません（投稿後に内容が変更されていません）'; return; }
+                box.innerHTML = '<div class="font-bold text-slate-200 mb-1">編集履歴（変更前の内容）</div>' + items.map(h => {
+                    const d = h.details || {};
+                    const money = (d.targetAmount || d.currentAmount) ? ` / 目標 ¥${esc(d.targetAmount || '-')}・現在 ¥${esc(d.currentAmount || '-')}` : '';
+                    return `<div class="border-t border-slate-700 pt-1">${esc(h.at?.toDate ? h.at.toDate().toLocaleString('ja-JP') : '')}　${esc(h.title)}${money}${h.contact ? ' / 連絡先: ' + esc(h.contact) : ''}</div>`;
+                }).join('');
+            } catch (e) { box.innerText = '読み込みに失敗しました: ' + (e.code || e.message); }
+        };
+
+        window.toggleEmailNotify = async function(el) {
+            if (!currentUser) return;
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), { emailNotify: el.checked });
+                if (userProfileData) userProfileData.emailNotify = el.checked;
+            } catch (e) { el.checked = !el.checked; alert('設定を保存できませんでした: ' + (e.code || e.message)); }
+        };
         window.openPortal = async function() {
             if (!currentUser) { alert('ログインが必要です'); return; }
             try {
@@ -2099,9 +2270,65 @@ function escapeHtml(str) {
         window.closeMypageModal = function() { toggleProfileEditForm(false); document.getElementById('mypage-modal').classList.add('hidden'); };
         window.openLegalModal = function(t) {
             const L = {
-                terms: ['利用規約', `第1条（適用）\n本規約は、Globiz（以下「当サービス」）の利用条件を定めるものです。利用者は本規約に同意の上、当サービスを利用するものとします。\n\n第2条（掲載）\n利用者は、クラウドファンディング、人材募集、事業紹介等の情報を、掲載枠（初回無料1回、以降は掲載チケット1枚＝5,000円（税込））を消費して投稿できます。\n\n第3条（禁止事項）\n法令・公序良俗に反する投稿、虚偽の情報、他者の権利侵害、詐欺的・勧誘的な投稿、当サービスの運営を妨げる行為を禁止します。\n\n第4条（投稿の削除）\n運営者は、本規約に違反する投稿を、事前の通知なく削除できます。この場合、消費した掲載枠は返還しません。\n\n第5条（免責）\n投稿内容の正確性・適法性は投稿者が責任を負います。利用者間のトラブル（資金の授受、雇用契約等を含む）について、運営者は責任を負いません。\n\n第6条（規約の変更）\n運営者は、必要に応じて本規約を変更できます。\n\n運営者：山口功夢\n制定日：2026年10月17日`],
-                privacy: ['プライバシーポリシー', `【運営者名】山口功夢（以下「運営者」）は、利用者の個人情報を次のとおり取り扱います。\n\n1. 取得する情報\nGoogleアカウントの氏名・メールアドレス・プロフィール画像、利用者が入力したプロフィール・投稿内容。\n\n2. 利用目的\nログイン認証、投稿の表示、掲載枠の管理、お問い合わせへの対応、サービスの改善。\n\n3. 第三者提供・委託\n法令に基づく場合を除き、本人の同意なく第三者へ提供しません。サービスの提供のため、Google（Firebase）および決済代行のStripeを利用します。カード情報は運営者のサーバーには保存されません。\n\n4. 開示・削除の請求\n下記窓口までご連絡ください。\n\nお問い合わせ：isamu571@icloud.com`],
-                tokusho: ['特定商取引法に基づく表記', `販売事業者：山口功夢\n運営責任者：山口功夢\n所在地：請求があれば遅滞なく開示します。\n電話番号：請求があれば遅滞なく開示します。\nメールアドレス：isamu571@icloud.com\n\n販売価格：単発掲載チケット 5,000円（税込）／月額プラン 5,000円（税込）/月\n商品代金以外の必要料金：なし（インターネット接続料金は利用者負担）\n支払方法：クレジットカード（Stripe）\n支払時期：購入手続き時（月額プランは毎月の更新日）\n提供時期：決済完了後、直ちに利用可能\n返品・キャンセル：デジタル商品の性質上、決済後の返金はお受けできません。月額プランは次回更新日の前日までに解約手続きをすれば、次回以降の請求は発生しません。`]
+                terms: ['利用規約', `第1条（適用）
+本規約は、Globiz（以下「当サービス」）の利用条件を定めるものです。利用者は本規約に同意の上、当サービスを利用するものとします。
+
+第2条（掲載）
+1. 利用者は、クラウドファンディング、人材募集、事業紹介等の情報を、掲載枠（初回無料1回、以降は掲載チケット1枚＝5,000円（税込））を消費して投稿できます。
+2. 掲載期間は投稿（再掲載を含む）から30日間です。期間を過ぎた投稿は非表示となり、再び掲載するには掲載枠1つが必要です。
+3. 初回無料枠による投稿は、運営者の確認後に公開されます。確認の結果、掲載をお断りする場合があります。この場合、消費した掲載枠は返還しません。
+
+第3条（禁止事項）
+法令・公序良俗に反する投稿、虚偽の情報、他者の権利侵害、詐欺的・勧誘的な投稿、当サービスの運営を妨げる行為を禁止します。
+
+第4条（投稿の非表示・削除）
+運営者は、本規約に違反するおそれのある投稿を、通報や調査に基づき、事前の通知なく非表示または削除できます。この場合、消費した掲載枠は返還しません。
+
+第5条（免責）
+投稿内容（金額・達成状況・募集条件を含む）の正確性・適法性は投稿者が責任を負います。運営者は内容の真偽を保証しません。利用者間のトラブル（資金の授受、雇用契約等を含む）について、運営者は責任を負いません。
+
+第6条（退会）
+利用者は、マイページからいつでも退会できます。退会すると、投稿・プロフィール・未使用の掲載チケットは削除され、復元できません。月額プランは退会時に自動で解約されます。
+
+第7条（規約の変更）
+運営者は、必要に応じて本規約を変更できます。
+
+運営者：山口功夢
+制定日：2026年10月17日`],
+                privacy: ['プライバシーポリシー', `【運営者名】山口功夢（以下「運営者」）は、利用者の個人情報を次のとおり取り扱います。
+
+1. 取得する情報
+Googleアカウントの氏名・メールアドレス・プロフィール画像、利用者が入力したプロフィール・投稿内容・お問い合わせ内容、決済の履歴（金額・日時）。
+
+2. 利用目的
+ログイン認証、投稿の表示、掲載枠の管理、運営者からの連絡（投稿の公開・非公開、メッセージ・掲載期限のお知らせ、お問い合わせへの対応）、不正利用の防止、サービスの改善。お知らせメールは、マイページでいつでも停止できます。
+
+3. 公開される情報
+表示名・プロフィール・投稿内容は他の利用者に公開されます。メールアドレスは公開されません。
+
+4. 第三者提供・委託
+法令に基づく場合を除き、本人の同意なく第三者へ提供しません。サービスの提供のため、Google（Firebase、Gmail）および決済代行のStripeを利用します。カード情報は運営者のサーバーには保存されません。
+
+5. 保存期間・削除
+退会（マイページから実行可能）すると、投稿・プロフィール・購入履歴を削除します。他の投稿に残した応援メッセージは削除されない場合があります。決済に関する記録は、法令および会計上の必要な範囲でStripe等に保管されます。
+
+6. 開示・訂正・削除の請求
+下記窓口までご連絡ください。
+
+お問い合わせ：isamu571@icloud.com`],
+                tokusho: ['特定商取引法に基づく表記', `販売事業者：山口功夢
+運営責任者：山口功夢
+所在地：請求があれば遅滞なく開示します。
+電話番号：請求があれば遅滞なく開示します。
+メールアドレス：isamu571@icloud.com
+
+販売価格：単発掲載チケット 5,000円（税込）／月額プラン 5,000円（税込）/月（毎回チケット3枚付与）
+商品代金以外の必要料金：なし（インターネット接続料金は利用者負担）
+支払方法：クレジットカード（Stripe）
+支払時期：購入手続き時（月額プランは毎月の更新日）
+提供時期：決済完了後、直ちに利用可能
+掲載期間：投稿から30日間（再掲載には掲載枠1つが必要）
+返品・キャンセル：デジタル商品の性質上、決済後の返金はお受けできません（二重決済など当方の誤りによる場合を除く）。月額プランは、マイページの「プランの管理・解約・領収書」からいつでも解約でき、次回更新日の前日までに手続きすれば次回以降の請求は発生しません。解約後も、付与済みのチケットは引き続きご利用いただけます。`]
             };
             const [title, body] = L[t] || ['規約情報', ''];
             document.getElementById('legal-modal-title').innerText = title;
