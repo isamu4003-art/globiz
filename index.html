@@ -602,6 +602,7 @@
             pendingPurchase = new URLSearchParams(window.location.search).get('purchased');
             onAuthStateChanged(auth, async (user) => {
                 currentUser = user;
+                updateStripeLinks();
                 const loginBtn = document.getElementById('login-btn');
                 const avatarBtn = document.getElementById('user-avatar-btn');
                 const avatarImg = document.getElementById('user-avatar-img');
@@ -627,29 +628,42 @@
             });
         });
 
-// 決済完了後(?purchased=ticket|sub)のチケット付与。ログイン・プロフィール読込後に1回だけ実行
+// 決済リンクに、ログイン中のユーザーIDを付ける（サーバーが「誰が払ったか」を判別するため）
+function updateStripeLinks() {
+            document.querySelectorAll('a[href^="https://buy.stripe.com/"]').forEach(a => {
+                if (!a.dataset.stripeBase) a.dataset.stripeBase = a.getAttribute('href').split('?')[0];
+                a.href = currentUser
+                    ? `${a.dataset.stripeBase}?client_reference_id=${encodeURIComponent(currentUser.uid)}` + (currentUser.email ? `&prefilled_email=${encodeURIComponent(currentUser.email)}` : '')
+                    : a.dataset.stripeBase;
+            });
+        }
+        document.addEventListener('click', (e) => {
+            const a = e.target.closest('a[href^="https://buy.stripe.com/"]');
+            if (a && !currentUser) { e.preventDefault(); alert('購入するにはログインが必要です'); loginWithGoogle(); }
+        });
+
+// 決済完了後に戻ってきた時の処理。チケットの付与はサーバー(Stripe Webhook)が行う。ここでは反映を待って表示するだけ
 async function handlePurchaseReturn() {
             if (!pendingPurchase || !currentUser || !userProfileData) return;
             const type = pendingPurchase;
             pendingPurchase = null;
-            window.history.replaceState({}, document.title, window.location.pathname); // 再読込での二重付与を防ぐ
-            try {
-                const userRef = doc(db, "users", currentUser.uid);
-                if (type === 'ticket') {
-                    await updateDoc(userRef, { paidTickets: increment(1) });
-                    userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
-                    alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
-                } else if (type === 'sub') {
-                    await updateDoc(userRef, { paidTickets: increment(3), isSubscribed: true });
-                    userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 3;
-                    userProfileData.isSubscribed = true;
-                    alert("👑 月額プランへのご加入ありがとうございます！特典チケットが3枚追加されました！");
-                }
-                updateQuotaUI();
-            } catch (e) {
-                console.error(e);
-                alert("チケットの反映に失敗しました: " + (e.code || e.message));
+            window.history.replaceState({}, document.title, window.location.pathname);
+            const before = userProfileData.paidTickets || 0;
+            alert(type === 'sub' ? '👑 ご加入ありがとうございます。反映を確認します…' : '🎉 決済ありがとうございます。チケットの反映を確認します…');
+            for (let i = 0; i < 15; i++) {
+                await new Promise(r => setTimeout(r, 2000));
+                try {
+                    const d = (await getDoc(doc(db, "users", currentUser.uid))).data() || {};
+                    if ((d.paidTickets || 0) > before || (type === 'sub' && d.isSubscribed)) {
+                        userProfileData.paidTickets = d.paidTickets || 0;
+                        userProfileData.isSubscribed = !!d.isSubscribed;
+                        updateQuotaUI();
+                        alert('✅ チケットが反映されました！');
+                        return;
+                    }
+                } catch (e) { console.error(e); }
             }
+            alert('反映に少し時間がかかっています。しばらくしてからページを再読み込みしてください。');
         }
 
 async function loadUserProfile(uid, defaultAuthUser) {
