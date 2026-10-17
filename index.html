@@ -145,7 +145,7 @@
                     <span id="current-cat-label" class="font-bold text-orange-400">すべて</span>
                     <span class="mx-1">•</span>
                     <span id="current-pref-label" class="font-bold text-red-400">全国</span>
-                    <span id="current-tag-label" class="ml-2 font-bold text-amber-400 hidden">#タグ</span>
+                    <span id="current-tag-label" title="クリックで解除" onclick="filterTag('all')" class="cursor-pointer ml-2 font-bold text-amber-400 hidden">#タグ</span>
                 </div>
                 <span id="result-count-label" class="text-[11px] text-slate-500">0件の挑戦</span>
             </div>
@@ -376,7 +376,7 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             <div class="text-center mb-4">
-                <img id="user-modal-avatar" src="https://via.placeholder.com/150" class="w-16 h-16 rounded-full mx-auto mb-3 border border-slate-700 object-cover">
+                <img id="user-modal-avatar" src="" class="w-16 h-16 rounded-full mx-auto mb-3 border border-slate-700 object-cover">
                 <h3 id="user-modal-name" class="text-sm font-bold text-white">ユーザー名</h3>
                 <p id="user-modal-affiliation" class="text-xs text-purple-400 mt-1 font-semibold">所属未設定</p>
                 <p id="user-modal-bio" class="text-xs text-slate-300 mt-3 italic px-2 leading-relaxed">自己紹介はありません</p>
@@ -431,21 +431,9 @@
                     <i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> プロジェクトページを開く
                 </a>
             </div>
-　　　　　　　　
+        
     
-    <!-- メッセージ投稿フォーム -->
-    <form onsubmit="addCheerMessage(event)" class="flex gap-2 mb-4">
-        <input type="text" id="cheer-message-input" placeholder="応援メッセージを入力..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500">
-        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shrink-0">送信</button>
-    </form>
-
-    <!-- 投稿されたメッセージの一覧表示エリア -->
-    <div id="detail-comments-list" class="space-y-2 max-h-40 overflow-y-auto">
-        <!-- JavaScriptでここにコメントが動的に描画されます -->
-    </div>
-
-            
-            <!-- ★進捗・開発ログ（ビルド・イン・パブリック）タイムラインセクション★ -->
+    <!-- ★進捗・開発ログ（ビルド・イン・パブリック）タイムラインセクション★ -->
             <div id="progress-logs-section" class="mb-6 pt-4 border-t border-slate-800">
                 <div class="flex justify-between items-center mb-3">
                     <h4 class="text-xs font-bold text-slate-200 flex items-center">
@@ -603,49 +591,15 @@
         let activePostId = null;
         let activeAuthorUid = null;
         let editingPostId = null;
+        let pendingPurchase = null;
+        const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#334155"/><circle cx="32" cy="24" r="12" fill="#94a3b8"/><rect x="12" y="40" width="40" height="24" rx="12" fill="#94a3b8"/></svg>');
+        const esc = (v) => String(v ?? '').replace(/[&<>"'`]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','`':'&#x60;'}[c]));
+        const safeUrl = (u) => { try { const x = new URL(u); return ['http:', 'https:'].includes(x.protocol) ? x.href : '#'; } catch { return '#'; } };
 
         window.addEventListener('DOMContentLoaded', () => {
             onCategoryChange();
             listenToPosts();
-            const urlParams = new URLSearchParams(window.location.search);
-            const purchasedType = urlParams.get('purchased');
-　　　　　　　　history.replaceState(null, '', window.location.pathname);            
-            if (purchasedType) {
-  　　　　　　　　  (async () => {
-        　　　　　　// ログイン完了まで最大10秒待つ
-        　　　　　　for (let i = 0; i < 50 && !currentUser; i++) {
-          　　　　　　  await new Promise(r => setTimeout(r, 200));
-  　　　　　　      }
-      　　　　　　  if (currentUser) {
-                        try {
-                            const userRef = doc(db, "users", currentUser.uid);
-                            
-                            if (purchasedType === 'ticket') {
-                                // 単発チケット購入の場合
-                                await updateDoc(userRef, { paidTickets: increment(1) });
-                                userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
-                                alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
-                            } else if (purchasedType === 'sub') {
-                                // 月額サブスクプラン加入の場合（例としてチケットを3枚付与、または会員フラグを付与）
-                                await updateDoc(userRef, { 
-                                    paidTickets: increment(3), // 例: 月額加入特典として3枚付与
-                                    isSubscribed: true         // サブスク会員フラグ
-                                });
-                                userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 3;
-                                userProfileData.isSubscribed = true;
-                                alert("👑 月額プランへのご加入ありがとうございます！特典チケットが3枚追加され、プレミアム会員になりました！");
-                            }
-
-                            updateQuotaUI();
-                            // URLからパラメータを綺麗に消す
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        } catch (e) {
-  　　　　　　　　　　　　　　　　  console.error(e);
-  　　　　　　　　　　　　　　　　  alert("チケットの反映に失敗しました: " + (e.code || e.message));
-　　　　　　　　　　　　　　　　　}
-                    }
-                }, 1500);
-            }
+            pendingPurchase = new URLSearchParams(window.location.search).get('purchased');
             onAuthStateChanged(auth, async (user) => {
                 currentUser = user;
                 const loginBtn = document.getElementById('login-btn');
@@ -655,10 +609,11 @@
                 if (user) {
                     loginBtn.classList.add('hidden');
                     avatarBtn.classList.remove('hidden');
-                    avatarImg.src = user.photoURL || 'https://via.placeholder.com/150';
-                    document.getElementById('mypage-avatar').src = user.photoURL || 'https://via.placeholder.com/150';
+                    avatarImg.src = user.photoURL || DEFAULT_AVATAR;
+                    document.getElementById('mypage-avatar').src = user.photoURL || DEFAULT_AVATAR;
                     
                     await loadUserProfile(user.uid, user);
+                    await handlePurchaseReturn();
                 } else {
                     loginBtn.classList.remove('hidden');
                     avatarBtn.classList.add('hidden');
@@ -671,6 +626,31 @@
                 if (activePostId) openDetailModal(activePostId);
             });
         });
+
+// 決済完了後(?purchased=ticket|sub)のチケット付与。ログイン・プロフィール読込後に1回だけ実行
+async function handlePurchaseReturn() {
+            if (!pendingPurchase || !currentUser || !userProfileData) return;
+            const type = pendingPurchase;
+            pendingPurchase = null;
+            window.history.replaceState({}, document.title, window.location.pathname); // 再読込での二重付与を防ぐ
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                if (type === 'ticket') {
+                    await updateDoc(userRef, { paidTickets: increment(1) });
+                    userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 1;
+                    alert("🎉 決済ありがとうございます！有料掲載チケットが1枚追加されました！");
+                } else if (type === 'sub') {
+                    await updateDoc(userRef, { paidTickets: increment(3), isSubscribed: true });
+                    userProfileData.paidTickets = (userProfileData.paidTickets || 0) + 3;
+                    userProfileData.isSubscribed = true;
+                    alert("👑 月額プランへのご加入ありがとうございます！特典チケットが3枚追加されました！");
+                }
+                updateQuotaUI();
+            } catch (e) {
+                console.error(e);
+                alert("チケットの反映に失敗しました: " + (e.code || e.message));
+            }
+        }
 
 async function loadUserProfile(uid, defaultAuthUser) {
             try {
@@ -718,8 +698,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
             if (!userProfileData) return;
             const freeEl = document.getElementById('quota-free');
             const paidEl = document.getElementById('quota-paid');
-            if (freeEl) freeEl.innerText = `${userProfileData.freeQuota || 0} 回`;
-            if (paidEl) paidEl.innerText = `${userProfileData.paidTickets || 0} 枚`;
+            if (freeEl) freeEl.innerText = `${Math.max(0, userProfileData.freeQuota || 0)} 回`;
+            if (paidEl) paidEl.innerText = `${Math.max(0, userProfileData.paidTickets || 0)} 枚`;
         }
 
         function renderUserProfileUI() {
@@ -731,11 +711,11 @@ async function loadUserProfile(uid, defaultAuthUser) {
             document.getElementById('mypage-affiliation-val').innerText = userProfileData.affiliation || '未記入';
 
             const twLink = document.getElementById('mypage-twitter-link');
-            twLink.href = userProfileData.twitterUrl || '#';
+            twLink.href = safeUrl(userProfileData.twitterUrl);
             twLink.innerText = userProfileData.twitterUrl ? 'リンクを開く' : '未設定';
 
             const webLink = document.getElementById('mypage-website-link');
-            webLink.href = userProfileData.websiteUrl || '#';
+            webLink.href = safeUrl(userProfileData.websiteUrl);
             webLink.innerText = userProfileData.websiteUrl ? 'リンクを開く' : '未設定';
 
             document.getElementById('edit-display-name').value = userProfileData.displayName || '';
@@ -764,8 +744,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 item.onclick = () => { closeMypageModal(); openDetailModal(post.id); };
                 item.innerHTML = `
                     <div>
-                        <span class="text-[10px] text-orange-400 font-bold">${post.category}</span>
-                        <h4 class="text-xs font-bold text-white truncate max-w-[200px]">${post.title}</h4>
+                        <span class="text-[10px] text-orange-400 font-bold">${esc(post.category)}</span>
+                        <h4 class="text-xs font-bold text-white truncate max-w-[200px]">${esc(post.title)}</h4>
                     </div>
                     <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
                 `;
@@ -807,15 +787,15 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 item.className = "bg-slate-800/60 border border-slate-700 p-3 rounded-xl space-y-1.5 cursor-pointer hover:border-orange-500 transition";
                 item.onclick = () => { closeMypageModal(); openDetailModal(log.projectId); };
 
-                let imgHtml = log.imageUrl ? `<img src="${log.imageUrl}" class="w-full max-h-36 object-cover rounded-lg mt-1">` : '';
+                let imgHtml = log.imageUrl ? `<img src="${esc(log.imageUrl)}" class="w-full max-h-36 object-cover rounded-lg mt-1">` : '';
 
                 item.innerHTML = `
                     <div class="flex justify-between items-center text-[10px] text-slate-400">
-                        <span class="font-bold text-orange-400 truncate max-w-[200px]">${log.projectTitle}</span>
-                        <span>${log.date}</span>
+                        <span class="font-bold text-orange-400 truncate max-w-[200px]">${esc(log.projectTitle)}</span>
+                        <span>${esc(log.date)}</span>
                     </div>
-                    <h5 class="text-xs font-bold text-white">${log.title}</h5>
-                    <p class="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">${log.text}</p>
+                    <h5 class="text-xs font-bold text-white">${esc(log.title)}</h5>
+                    <p class="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">${esc(log.text)}</p>
                     ${imgHtml}
                 `;
                 container.appendChild(item);
@@ -1094,7 +1074,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
 
                 let imageHtml = '';
                 if (post.imageUrl) {
-                    imageHtml = `<div class="w-full h-36 bg-slate-950 rounded-xl mb-3 overflow-hidden border border-slate-800"><img src="${post.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300"></div>`;
+                    imageHtml = `<div class="w-full h-36 bg-slate-950 rounded-xl mb-3 overflow-hidden border border-slate-800"><img src="${esc(post.imageUrl)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300"></div>`;
                 }
 
                 let subBadge = '';
@@ -1126,7 +1106,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
                 const logsCount = (post.progressLogs || []).length;
                 const logBadge = logsCount > 0 ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-bolt mr-1"></i>アプデ ${logsCount}</span>` : '';
 
-                const tagsHtml = (post.tags || []).slice(0, 3).map(t => `<span onclick="filterTag('${t}', event)" class="text-[10px] text-slate-400 hover:text-amber-400 bg-slate-800 px-2 py-0.5 rounded-md">#${t}</span>`).join(' ');
+                const tagsHtml = (post.tags || []).slice(0, 3).map(t => `<span data-tag="${esc(t)}" onclick="filterTag(this.dataset.tag, event)" class="text-[10px] text-slate-400 hover:text-amber-400 bg-slate-800 px-2 py-0.5 rounded-md">#${esc(t)}</span>`).join(' ');
 
                 const isBookmarked = userBookmarks.includes(post.id);
                 const bmClass = isBookmarked ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-slate-500 hover:text-amber-400";
@@ -1136,8 +1116,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
                         ${imageHtml}
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center flex-wrap gap-1 pr-6">
-                                <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${post.category}</span>
-                                <span class="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">${post.prefecture || '全国'}</span>
+                                <span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${esc(post.category)}</span>
+                                <span class="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">${esc(post.prefecture || '全国')}</span>
                                 ${subBadge}
                                 ${logBadge}
                             </div>
@@ -1145,13 +1125,13 @@ async function loadUserProfile(uid, defaultAuthUser) {
                                 <i class="${bmClass} text-sm"></i>
                             </button>
                         </div>
-                        <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${post.title}</h2>
-                        <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed whitespace-pre-wrap mb-2">${summaryText}</p>
+                        <h2 class="text-sm font-bold text-white mb-2 group-hover:text-orange-400 transition line-clamp-2">${esc(post.title)}</h2>
+                        <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed whitespace-pre-wrap mb-2">${esc(summaryText)}</p>
                         <div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>
                         ${cfProgressBar}
                     </div>
                     <div class="flex justify-between items-center pt-3 mt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
-                        <span onclick="openUserProfileByUid('${post.uid}', event)" class="hover:text-orange-400 transition"><i class="fa-solid fa-user mr-1 text-slate-500"></i>${post.author || '匿名'}</span>
+                        <span onclick="openUserProfileByUid('${esc(post.uid)}', event)" class="hover:text-orange-400 transition"><i class="fa-solid fa-user mr-1 text-slate-500"></i>${esc(post.author || '匿名')}</span>
                         <span class="font-semibold text-orange-400"><i class="fa-solid fa-heart mr-1"></i>${post.cheers || 0}</span>
                     </div>
                 `;
@@ -1217,8 +1197,10 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) { alert('投稿にはログインが必要です'); loginWithGoogle(); return; }
 
-            const freeCount = userProfileData.freeQuota || 0;
-            const paidCount = userProfileData.paidTickets || 0;
+            if (!userProfileData) { alert('ユーザー情報を読み込み中です。数秒後にもう一度お試しください'); return; }
+            const freeCount = Math.max(0, userProfileData.freeQuota || 0);
+            const paidCount = Math.max(0, userProfileData.paidTickets || 0);
+            const usedFree = freeCount > 0;
 
             // 新規投稿時（編集以外）の掲載枠チェック
             if (!editingPostId) {
@@ -1286,7 +1268,9 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                     alert('投稿を更新しました！');
                 } else {
                     // 新規投稿をFirestoreに追加
-                    await addDoc(collection(db, "posts"), {
+                    const newPostRef = doc(collection(db, "posts"));
+                    const batch = writeBatch(db);
+                    batch.set(newPostRef, {
                         title: title,
                         category: cat,
                         prefecture: pref,
@@ -1305,22 +1289,18 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
                         details: detailsObj
                     });
 
-                    // 無料枠または有料チケットを1つ減算して更新
+                    // 投稿の作成と掲載枠の消費を同時に確定（片方だけ成功しない）
                     const userRef = doc(db, "users", currentUser.uid);
-                    if (freeCount > 0) {
-                        await updateDoc(userRef, { freeQuota: increment(-1) });
-                        userProfileData.freeQuota -= 1;
-                    } else if (paidCount > 0) {
-                        await updateDoc(userRef, { paidTickets: increment(-1) });
-                        userProfileData.paidTickets -= 1;
-                    }
+                    batch.update(userRef, usedFree ? { freeQuota: increment(-1) } : { paidTickets: increment(-1) });
+                    await batch.commit();
+                    if (usedFree) userProfileData.freeQuota = freeCount - 1; else userProfileData.paidTickets = paidCount - 1;
                     updateQuotaUI();
-
-                    alert('無料枠を消費して投稿を掲載しました！');
+                    alert(usedFree ? '無料枠を消費して投稿を掲載しました！' : '掲載チケットを1枚消費して投稿を掲載しました！');
                 }
 
                 closePostModal();
                 document.getElementById('post-form').reset();
+                onCategoryChange();
             } catch (error) {
                 alert("保存エラー: " + error.message);
             } finally {
@@ -1329,108 +1309,35 @@ document.getElementById('post-form').addEventListener('submit', async (e) => {
             }
         });
 
- // 1. 新しい進捗ログ・アップデートの追加
+ // 進捗ログの追加（投稿者のみ）。投稿ドキュメントの progressLogs 配列に保存
 window.addProgressLog = async function(event) {
-    event.preventDefault();
-    if (!currentUser) {
-        alert("ログインしてください。");
-        return;
-    }
-    if (!activePostId) return;
-
-    const titleInput = document.getElementById('log-title-input');
-    const descInput = document.getElementById('log-desc-input');
-    
-    const title = titleInput ? titleInput.value.trim() : "";
-    const description = descInput ? descInput.value.trim() : "";
-
-    if (!title || !description) {
-        alert("タイトルと詳細を入力してください。");
-        return;
-    }
-
-    try {
-        // posts/{postId}/logs サブコレクションへ追加
-        const logsRef = collection(db, "posts", activePostId, "logs");
-        await addDoc(logsRef, {
-            uid: currentUser.uid,
-            title: title,
-            description: description,
-            createdAt: serverTimestamp() // 正確なサーバー時刻
-        });
-
-        if (titleInput) titleInput.value = "";
-        if (descInput) descInput.value = "";
-
-        alert("🚀 進捗ログを投稿しました！");
-        // タイムラインを再読み込み
-        loadProgressLogs(activePostId);
-    } catch (err) {
-        console.error("Error adding progress log: ", err);
-        alert("進捗ログの投稿に失敗しました。");
-    }
-};
-
-// 2. 進捗ログをサブコレクションから取得してタイムラインに表示
-async function loadProgressLogs(postId) {
-    const logsListEl = document.getElementById('progress-logs-list'); // タイムラインの表示先要素ID（適宜既存のIDに合わせて調整）
-    if (!logsListEl) return;
-
-    logsListEl.innerHTML = '<p class="text-xs text-slate-500">読み込み中...</p>';
-
-    try {
-        const logsRef = collection(db, "posts", postId, "logs");
-        const q = query(logsRef, orderBy("createdAt", "desc")); // 新しい順
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            logsListEl.innerHTML = '<p class="text-xs text-slate-500">まだ進捗ログはありません。</p>';
-            return;
-        }
-
-        let html = '';
-        snapshot.forEach((docSnap) => {
-            const log = docSnap.data();
-            const logId = docSnap.id;
-            const dateStr = log.createdAt ? log.createdAt.toDate().toLocaleDateString('ja-JP') : '';
-
-            // 投稿者本人のみ削除ボタンを表示
-            const isOwner = currentUser && currentUser.uid === log.uid;
-
-            html += `
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs text-white mb-3">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-orange-400 text-sm">${escapeHtml(log.title)}</span>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] text-slate-500">${dateStr}</span>
-                            ${isOwner ? `<button onclick="deleteProgressLog('${postId}', '${logId}')" class="text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-                        </div>
-                    </div>
-                    <p class="text-slate-300 break-words whitespace-pre-wrap">${escapeHtml(log.description)}</p>
-                </div>
-            `;
-        });
-        logsListEl.innerHTML = html;
-    } catch (err) {
-        console.error("Error loading progress logs:", err);
-        logsListEl.innerHTML = '<p class="text-xs text-red-400">進捗ログの読み込みに失敗しました。</p>';
-    }
-}
-
-// 3. 進捗ログの削除処理
-window.deleteProgressLog = async function(postId, logId) {
-    if (!currentUser) return;
-    if (!confirm("この進捗ログを削除してもよろしいですか？")) return;
-
-    try {
-        await deleteDoc(doc(db, "posts", postId, "logs", logId));
-        alert("🗑️ 進捗ログを削除しました。");
-        loadProgressLogs(postId);
-    } catch (err) {
-        console.error("Error deleting progress log:", err);
-        alert("削除に失敗しました。");
-    }
-};
+            event.preventDefault();
+            if (!currentUser || !activePostId) return;
+            const post = postsList.find(p => p.id === activePostId);
+            if (!post || post.uid !== currentUser.uid) { alert('投稿者本人のみ追加できます'); return; }
+            const btn = document.getElementById('add-log-btn');
+            btn.disabled = true;
+            try {
+                let imageUrl = '';
+                const file = document.getElementById('log-image').files[0];
+                if (file) {
+                    const snap = await uploadBytes(ref(storage, `logs/${Date.now()}_${file.name}`), file);
+                    imageUrl = await getDownloadURL(snap.ref);
+                }
+                const log = {
+                    title: document.getElementById('log-title').value.trim(),
+                    text: document.getElementById('log-text').value.trim(),
+                    imageUrl,
+                    date: new Date().toLocaleDateString('ja-JP'),
+                    timestamp: Date.now()
+                };
+                await updateDoc(doc(db, "posts", activePostId), { progressLogs: arrayUnion(log), lastUpdatedAt: Date.now() });
+                document.getElementById('add-log-form').reset();
+            } catch (err) {
+                console.error(err);
+                alert('進捗ログの投稿に失敗しました: ' + (err.code || err.message));
+            } finally { btn.disabled = false; }
+        };
 
         window.openEditPostModal = function() {
             if (!activePostId) return;
@@ -1487,14 +1394,14 @@ window.deleteProgressLog = async function(postId, logId) {
                     document.getElementById('user-modal-name').innerText = uData.displayName || 'ユーザー';
                     document.getElementById('user-modal-affiliation').innerText = uData.affiliation || '所属未設定';
                     document.getElementById('user-modal-bio').innerText = uData.bio || '自己紹介はありません';
-                    document.getElementById('user-modal-avatar').src = uData.photoURL || 'https://via.placeholder.com/150';
+                    document.getElementById('user-modal-avatar').src = uData.photoURL || DEFAULT_AVATAR;
 
                     const tw = document.getElementById('user-modal-twitter');
-                    if (uData.twitterUrl) { tw.href = uData.twitterUrl; tw.classList.remove('hidden'); tw.classList.add('flex'); }
+                    if (uData.twitterUrl) { tw.href = safeUrl(uData.twitterUrl); tw.classList.remove('hidden'); tw.classList.add('flex'); }
                     else { tw.classList.add('hidden'); tw.classList.remove('flex'); }
 
                     const web = document.getElementById('user-modal-website');
-                    if (uData.websiteUrl) { web.href = uData.websiteUrl; web.classList.remove('hidden'); web.classList.add('flex'); }
+                    if (uData.websiteUrl) { web.href = safeUrl(uData.websiteUrl); web.classList.remove('hidden'); web.classList.add('flex'); }
                     else { web.classList.add('hidden'); web.classList.remove('flex'); }
 
                     updateFollowUserBtnUI();
@@ -1545,12 +1452,12 @@ window.deleteProgressLog = async function(postId, logId) {
             }
 
             document.getElementById('detail-category').innerText = post.category;
-            document.getElementById('detail-prefecture').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${post.prefecture || '全国'}`;
+            document.getElementById('detail-prefecture').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${esc(post.prefecture || '全国')}`;
             document.getElementById('detail-title').innerText = post.title;
             document.getElementById('detail-author').innerText = `投稿者: ${post.author || '匿名'} (${post.date || ''})`;
 
             const tagsContainer = document.getElementById('detail-tags-container');
-            tagsContainer.innerHTML = (post.tags || []).map(t => `<span onclick="filterTag('${t}', event)" class="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-orange-500/20">#${t}</span>`).join('');
+            tagsContainer.innerHTML = (post.tags || []).map(t => `<span data-tag="${esc(t)}" onclick="filterTag(this.dataset.tag, event)" class="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-orange-500/20">#${esc(t)}</span>`).join('');
 
             const isBookmarked = userBookmarks.includes(post.id);
             document.getElementById('bookmark-icon').className = isBookmarked ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-amber-400";
@@ -1558,7 +1465,7 @@ window.deleteProgressLog = async function(postId, logId) {
             const urlContainer = document.getElementById('detail-url-container');
             const urlBtn = document.getElementById('detail-url-btn');
             if (post.url) {
-                urlBtn.href = post.url;
+                urlBtn.href = safeUrl(post.url);
                 urlContainer.classList.remove('hidden');
             } else {
                 urlContainer.classList.add('hidden');
@@ -1579,8 +1486,8 @@ window.deleteProgressLog = async function(postId, logId) {
                             <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-gift mr-1.5"></i>リターン（返礼品・特典）</span>
                             <span class="text-sm font-black text-white">¥${formatMoney(details.returnPrice)}</span>
                         </div>
-                        <h5 class="text-xs font-bold text-white">${details.returnTitle}</h5>
-                        <p class="text-[11px] text-slate-300 leading-relaxed">${details.returnDesc || ''}</p>
+                        <h5 class="text-xs font-bold text-white">${esc(details.returnTitle)}</h5>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">${esc(details.returnDesc)}</p>
                     </div>
                 ` : '';
 
@@ -1602,7 +1509,7 @@ window.deleteProgressLog = async function(postId, logId) {
                     </div>
                     <div>
                         <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-coins text-orange-400 mr-1.5"></i>資金の使い道</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.useOfFunds || '-'}</div>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${esc(details.useOfFunds || '-')}</div>
                     </div>
                     ${returnSectionHtml}
                 `;
@@ -1610,7 +1517,7 @@ window.deleteProgressLog = async function(postId, logId) {
                 container.innerHTML = `
                     <div>
                         <h4 class="text-xs font-bold text-slate-200 mb-1"><i class="fa-solid fa-building text-purple-400 mr-1.5"></i>概要・詳細</h4>
-                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${details.business || details.skills || '-'}</div>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 whitespace-pre-wrap">${esc([details.role && '募集職種: ' + details.role, details.workType && '勤務形態: ' + details.workType, details.skills && '求めるスキル:\n' + details.skills, details.business && '事業内容:\n' + details.business, details.vision && '目指すビジョン:\n' + details.vision].filter(Boolean).join('\n\n') || '-')}</div>
                     </div>
                 `;
             }
@@ -1627,16 +1534,27 @@ window.deleteProgressLog = async function(postId, logId) {
                     const item = document.createElement('div');
                     item.className = "bg-slate-800/80 border border-amber-500/20 p-3.5 rounded-xl text-xs relative space-y-1.5";
                     
-                    let logImgHtml = log.imageUrl ? `<img src="${log.imageUrl}" class="w-full max-h-48 object-cover rounded-lg mt-2 border border-slate-700">` : '';
+                    let logImgHtml = log.imageUrl ? `<img src="${esc(log.imageUrl)}" class="w-full max-h-48 object-cover rounded-lg mt-2 border border-slate-700">` : '';
 
                     item.innerHTML = `
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-amber-400 text-xs"><i class="fa-solid fa-bolt mr-1"></i>${log.title}</span>
-                            <span class="text-[10px] text-slate-500">${log.date}</span>
+                            <span class="font-bold text-amber-400 text-xs"><i class="fa-solid fa-bolt mr-1"></i>${esc(log.title)}</span>
+                            <span class="text-[10px] text-slate-500">${esc(log.date)}</span>
                         </div>
-                        <p class="text-slate-200 leading-relaxed whitespace-pre-wrap text-[11px]">${log.text}</p>
+                        <p class="text-slate-200 leading-relaxed whitespace-pre-wrap text-[11px]">${esc(log.text)}</p>
                         ${logImgHtml}
                     `;
+                    if (currentUser && post.uid === currentUser.uid) {
+                        const addDelBtn = (item, onDelete) => {
+                            const b = document.createElement('button');
+                            b.className = 'ml-2 text-slate-500 hover:text-red-400 transition';
+                            b.title = '削除';
+                            b.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                            b.onclick = (e) => { e.stopPropagation(); onDelete(); };
+                            item.firstElementChild.lastElementChild.appendChild(b);
+                        };
+                        addDelBtn(item, () => deleteProgressLog(log));
+                    }
                     logsListElem.appendChild(item);
                 });
             }
@@ -1653,11 +1571,22 @@ window.deleteProgressLog = async function(postId, logId) {
                     item.className = "bg-slate-800/40 border border-slate-800 p-2.5 rounded-lg text-xs";
                     item.innerHTML = `
                         <div class="flex justify-between text-[10px] text-slate-400 mb-1">
-                            <span class="font-bold text-slate-300">${c.name}</span>
-                            <span>${c.date}</span>
+                            <span class="font-bold text-slate-300">${esc(c.name)}</span>
+                            <span>${esc(c.date)}</span>
                         </div>
-                        <p class="text-slate-200 leading-relaxed">${c.text}</p>
+                        <p class="text-slate-200 leading-relaxed">${esc(c.text)}</p>
                     `;
+                    if (currentUser && (c.uid === currentUser.uid || post.uid === currentUser.uid)) {
+                        const addDelBtn = (item, onDelete) => {
+                            const b = document.createElement('button');
+                            b.className = 'ml-2 text-slate-500 hover:text-red-400 transition';
+                            b.title = '削除';
+                            b.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                            b.onclick = (e) => { e.stopPropagation(); onDelete(); };
+                            item.firstElementChild.lastElementChild.appendChild(b);
+                        };
+                        addDelBtn(item, () => deleteComment(c));
+                    }
                     commentsListElem.appendChild(item);
                 });
             }
@@ -1693,149 +1622,44 @@ window.deleteProgressLog = async function(postId, logId) {
                     console.error('Failed to copy: ', err);
                 });
             };
-// 応援メッセージ（コメント）の送信処理
-            window.addCheerMessage = async function(event) {
-                event.preventDefault();
-                if (!currentUser) {
-                    alert("応援メッセージを送信するにはログインが必要です。");
-                    loginWithGoogle();
-                    return;
-                }
-                if (!activePostId) return;
+// 進捗ログの削除（投稿者のみ）
+window.deleteProgressLog = async function(log) {
+            if (!currentUser || !activePostId || !confirm('この進捗ログを削除しますか？')) return;
+            try { await updateDoc(doc(db, "posts", activePostId), { progressLogs: arrayRemove(log) }); }
+            catch (e) { alert('削除に失敗しました: ' + (e.code || e.message)); }
+        };
 
-                const inputElem = document.getElementById('cheer-message-input');
-                const text = inputElem.value.trim();
-                if (!text) return;
+        // 応援メッセージの削除（書いた本人、または投稿者）
+        window.deleteComment = async function(c) {
+            if (!currentUser || !activePostId || !confirm('この応援メッセージを削除しますか？')) return;
+            try { await updateDoc(doc(db, "posts", activePostId), { comments: arrayRemove(c) }); }
+            catch (e) { alert('削除に失敗しました: ' + (e.code || e.message)); }
+        };
 
-                try {
-                    const postRef = doc(db, "posts", activePostId);
-                    const post = postsList.find(p => p.id === activePostId);
-                    if (!post) return;
-
-                    // 既存のコメント配列に新しいメッセージを追加
-                    const authorName = (typeof userProfileData !== 'undefined' && userProfileData.name) 
-    ? userProfileData.name 
-    : (currentUser.displayName || "名無しサポーター");
-
-const newComment = {
-    name: authorName,
-    text: text,
-    date: new Date().toLocaleDateString('ja-JP')
-};
-
-                    const updatedComments = post.comments ? [...post.comments, newComment] : [newComment];
-
-                    await updateDoc(postRef, {
-                        comments: updatedComments
-                    });
-
-                    // 入力欄をクリア
-                    inputElem.value = "";
-                    alert("💬 応援メッセージを送信しました！");
-                } catch (err) {
-                    console.error("Error adding comment: ", err);
-                    alert("メッセージの送信に失敗しました。");
-                }
-            };
-       // 応援メッセージの追加（サブコレクション版）
-window.addCheerMessage = async function(event) {
-    event.preventDefault();
-    if (!currentUser) {
-        alert("ログインしてください。");
-        return;
-    }
-    if (!activePostId) return;
-
-    const input = document.getElementById('cheer-message-input');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const authorName = (typeof userProfileData !== 'undefined' && userProfileData.name) 
-        ? userProfileData.name 
-        : (currentUser.displayName || "名無しサポーター");
-
-    try {
-        // posts/{postId}/comments サブコレクションへ追加
-        const commentsRef = collection(db, "posts", activePostId, "comments");
-        await addDoc(commentsRef, {
-            uid: currentUser.uid,
-            name: authorName,
-            text: text,
-            createdAt: serverTimestamp()
-        });
-
-        input.value = "";
-        loadDetailComments(activePostId);
-    } catch (err) {
-        console.error("Error adding comment: ", err);
-        alert("メッセージの投稿に失敗しました。");
-    }
-};
-
-// サブコレクションから応援メッセージを取得して描画する関数
-async function loadDetailComments(postId) {
-    const commentsListEl = document.getElementById('detail-comments-list');
-    if (!commentsListEl) return;
-
-    commentsListEl.innerHTML = '<p class="text-xs text-slate-500">読み込み中...</p>';
-
-    try {
-        const commentsRef = collection(db, "posts", postId, "comments");
-        const q = query(commentsRef, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            commentsListEl.innerHTML = '<p class="text-xs text-slate-500">まだ応援メッセージはありません。</p>';
-            return;
-        }
-
-        let html = '';
-        snapshot.forEach((docSnap) => {
-            const comment = docSnap.data();
-            const commentId = docSnap.id;
-            const dateStr = comment.createdAt ? comment.createdAt.toDate().toLocaleDateString('ja-JP') : '';
-
-            const isOwner = currentUser && currentUser.uid === comment.uid;
-
-            html += `
-                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-xs text-white mb-2">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-orange-400">${escapeHtml(comment.name)}</span>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] text-slate-500">${dateStr}</span>
-                            ${isOwner ? `<button onclick="deleteSubCollectionComment('${postId}', '${commentId}')" class="text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-                        </div>
-                    </div>
-                    <p class="text-slate-300 break-words">${escapeHtml(comment.text)}</p>
-                </div>
-            `;
-        });
-        commentsListEl.innerHTML = html;
-    } catch (err) {
-        console.error("Error loading comments:", err);
-        commentsListEl.innerHTML = '<p class="text-xs text-red-400">メッセージの読み込みに失敗しました。</p>';
-    }
-}
-
-// サブコレクションのコメント削除処理
-window.deleteSubCollectionComment = async function(postId, commentId) {
-    if (!currentUser) return;
-    if (!confirm("この応援メッセージを削除してもよろしいですか？")) return;
-
-    try {
-        await deleteDoc(doc(db, "posts", postId, "comments", commentId));
-        alert("🗑️ 応援メッセージを削除しました。");
-        loadDetailComments(postId);
-    } catch (err) {
-        console.error("Error deleting comment:", err);
-        alert("削除に失敗しました。");
-    }
-};
+// 応援メッセージの送信（HTMLの「メッセージを送る」ボタン用）
+window.addSupporterComment = async function() {
+            if (!currentUser) { alert("応援メッセージを送るにはログインが必要です"); loginWithGoogle(); return; }
+            if (!activePostId) return;
+            const msgEl = document.getElementById('supporter-msg');
+            const nameEl = document.getElementById('supporter-name');
+            const text = msgEl.value.trim();
+            if (!text) return;
+            const name = nameEl.value.trim() || userProfileData?.displayName || currentUser.displayName || "名無しサポーター";
+            try {
+                await updateDoc(doc(db, "posts", activePostId), {
+                    comments: arrayUnion({ name, text, uid: currentUser.uid, date: new Date().toLocaleDateString('ja-JP') })
+                });
+                msgEl.value = '';
+            } catch (err) {
+                console.error(err);
+                alert("メッセージの送信に失敗しました: " + (err.code || err.message));
+            }
+        };
 
 // 簡易的なHTMLエスケープ
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&'`<>"]/g, (match) => {
+    return String(str).replace(/[&'`<>"]/g, (match) => {
         return {
             '&': '&amp;',
             "'": '&#x27;',
@@ -1908,10 +1732,17 @@ function escapeHtml(str) {
 
         window.deletePost = async function() {
             if (!activePostId || !confirm('削除しますか？')) return;
-            try { await deleteDoc(doc(db, "posts", activePostId)); closeDetailModal(); alert('削除しました'); } catch (e) {}
+            try { await deleteDoc(doc(db, "posts", activePostId)); closeDetailModal(); alert('削除しました'); } catch (e) { alert('削除に失敗しました: ' + (e.code || e.message)); }
         };
 
-        window.filterCategory = function(cat) { currentCategory = cat; renderPosts(); };
+        window.filterCategory = function(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                const on = b.id === `btn-${cat}`;
+                b.classList.toggle('bg-orange-500', on); b.classList.toggle('text-white', on); b.classList.toggle('text-slate-400', !on);
+            });
+            renderPosts();
+        };
         window.filterPrefecture = function(pref) { currentPrefecture = pref; document.getElementById('pref-filter-select').value = pref; renderPosts(); };
         window.filterTag = function(tag, event) {
             if (event) event.stopPropagation();
@@ -1919,7 +1750,13 @@ function escapeHtml(str) {
             closeDetailModal();
             renderPosts();
         };
-        window.resetFilters = function() { currentCategory = 'all'; currentPrefecture = 'all'; currentTag = 'all'; renderPosts(); };
+        window.resetFilters = function() {
+            currentTag = 'all'; currentPrefecture = 'all';
+            document.getElementById('pref-filter-select').value = 'all';
+            document.getElementById('search-input').value = '';
+            const m = document.getElementById('search-input-mobile'); if (m) m.value = '';
+            filterCategory('all');
+        };
         window.searchPosts = function() { renderPosts(); };
         window.searchPostsMobile = function() { renderPosts(); };
 
@@ -1937,7 +1774,17 @@ function escapeHtml(str) {
         window.closePostModal = function() { editingPostId = null; document.getElementById('post-modal').classList.add('hidden'); };
         window.openMypageModal = function() { switchMypageTab('profile'); document.getElementById('mypage-modal').classList.remove('hidden'); };
         window.closeMypageModal = function() { toggleProfileEditForm(false); document.getElementById('mypage-modal').classList.add('hidden'); };
-        window.openLegalModal = function(t) { document.getElementById('legal-modal').classList.remove('hidden'); };
+        window.openLegalModal = function(t) {
+            const L = {
+                terms: ['利用規約', `第1条（適用）\n本規約は、Globiz（以下「当サービス」）の利用条件を定めるものです。利用者は本規約に同意の上、当サービスを利用するものとします。\n\n第2条（掲載）\n利用者は、クラウドファンディング、人材募集、事業紹介等の情報を、掲載枠（初回無料1回、以降は掲載チケット1枚＝5,000円（税込））を消費して投稿できます。\n\n第3条（禁止事項）\n法令・公序良俗に反する投稿、虚偽の情報、他者の権利侵害、詐欺的・勧誘的な投稿、当サービスの運営を妨げる行為を禁止します。\n\n第4条（投稿の削除）\n運営者は、本規約に違反する投稿を、事前の通知なく削除できます。この場合、消費した掲載枠は返還しません。\n\n第5条（免責）\n投稿内容の正確性・適法性は投稿者が責任を負います。利用者間のトラブル（資金の授受、雇用契約等を含む）について、運営者は責任を負いません。\n\n第6条（規約の変更）\n運営者は、必要に応じて本規約を変更できます。\n\n運営者：【運営者名】\n制定日：【年月日】`],
+                privacy: ['プライバシーポリシー', `【運営者名】（以下「運営者」）は、利用者の個人情報を次のとおり取り扱います。\n\n1. 取得する情報\nGoogleアカウントの氏名・メールアドレス・プロフィール画像、利用者が入力したプロフィール・投稿内容。\n\n2. 利用目的\nログイン認証、投稿の表示、掲載枠の管理、お問い合わせへの対応、サービスの改善。\n\n3. 第三者提供・委託\n法令に基づく場合を除き、本人の同意なく第三者へ提供しません。サービスの提供のため、Google（Firebase）および決済代行のStripeを利用します。カード情報は運営者のサーバーには保存されません。\n\n4. 開示・削除の請求\n下記窓口までご連絡ください。\n\nお問い合わせ：【メールアドレス】`],
+                tokusho: ['特定商取引法に基づく表記', `販売事業者：【氏名または事業者名】\n運営責任者：【氏名】\n所在地：【住所（請求があれば遅滞なく開示する旨の記載も可）】\n電話番号：【電話番号（請求があれば遅滞なく開示する旨の記載も可）】\nメールアドレス：【メールアドレス】\n\n販売価格：単発掲載チケット 5,000円（税込）／月額プラン 5,000円（税込）/月\n商品代金以外の必要料金：なし（インターネット接続料金は利用者負担）\n支払方法：クレジットカード（Stripe）\n支払時期：購入手続き時（月額プランは毎月の更新日）\n提供時期：決済完了後、直ちに利用可能\n返品・キャンセル：デジタル商品の性質上、決済後の返金はお受けできません。月額プランは次回更新日の前日までに解約手続きをすれば、次回以降の請求は発生しません。`]
+            };
+            const [title, body] = L[t] || ['規約情報', ''];
+            document.getElementById('legal-modal-title').innerText = title;
+            document.getElementById('legal-modal-body').innerText = body;
+            document.getElementById('legal-modal').classList.remove('hidden');
+        };
         window.closeLegalModal = function() { document.getElementById('legal-modal').classList.add('hidden'); };
     </script>
 </body>
