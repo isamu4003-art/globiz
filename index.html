@@ -88,6 +88,7 @@
                     <option value="updated">⚡️ 最近アプデがあった順</option>
                     <option value="cheers">🔥 応援数順（人気順）</option>
                     <option value="support">🎫 応援チケット順</option>
+                    <option value="ending">⏳ 掲載終了が近い順</option>
                     <option value="progress">🎯 達成率順（クラファン）</option>
                 </select>
             </div>
@@ -485,6 +486,7 @@
     <!-- 応援チケット -->
             <div id="support-box" class="mb-6 hidden bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4 text-center space-y-2">
                 <p class="text-xs text-slate-100 font-bold"><i class="fa-solid fa-ticket text-amber-400 mr-1"></i>この挑戦に「応援チケット」を贈る</p>
+                <p id="support-deadline" class="text-xs font-bold"></p>
                 <p class="text-[11px] text-slate-300">¥500で、この投稿の掲載期間が<b class="text-amber-300">7日</b>延びます。<span id="support-count-text" class="text-amber-300 font-bold"></span></p>
                 <button id="support-btn" onclick="giftSupportTicket()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
                     <i class="fa-solid fa-gift mr-1"></i> 応援チケットを贈る（¥500）
@@ -1233,6 +1235,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
 
             if (currentSortOrder === 'cheers') {
                 filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
+            } else if (currentSortOrder === 'ending') {
+                filtered.sort((a, b) => expiryOf(a) - expiryOf(b));
             } else if (currentSortOrder === 'support') {
                 filtered.sort((a, b) => (b.supportCount || 0) - (a.supportCount || 0) || (b.cheers || 0) - (a.cheers || 0));
             } else if (currentSortOrder === 'updated') {
@@ -1305,6 +1309,12 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
+                const leftDays = Math.ceil((expiryOf(post) - Date.now()) / DAY);
+                if (!post.hidden && !post.pending && leftDays > 0) {
+                    subBadge += leftDays <= 5
+                        ? `<span class="text-[10px] font-bold text-orange-300 bg-orange-500/15 border border-orange-500/40 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-hourglass-end mr-1"></i>あと${leftDays}日</span>`
+                        : `<span class="text-[10px] text-slate-300 bg-slate-500/15 border border-slate-500/30 px-2 py-0.5 rounded-md ml-1"><i class="fa-regular fa-clock mr-1"></i>あと${leftDays}日</span>`;
+                }
                 if (post.supportCount > 0) subBadge += `<span class="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-ticket mr-1"></i>${post.supportCount}</span>`;
                 if (post.pending) subBadge += `<span class="text-[10px] text-sky-300 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-md ml-1">審査中</span>`;
                 else if (post.hidden) subBadge += `<span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md ml-1">非公開</span>`;
@@ -1972,6 +1982,15 @@ function escapeHtml(str) {
             show('delete-btn', mine || isAdmin);
             show('report-btn', !mine);
             show('support-box', !mine && !post.hidden && !post.pending);
+            {
+                const exp = expiryOf(post);
+                const leftD = Math.ceil((exp - Date.now()) / DAY);
+                const dEl = document.getElementById('support-deadline');
+                const dateStr = new Date(exp).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+                if (leftD <= 0) { dEl.innerText = '⏰ 掲載期間が終了しています'; dEl.className = 'text-xs font-bold text-slate-300'; }
+                else if (leftD <= 5) { dEl.innerText = `🔥 掲載期限 ${dateStr}（あと${leftD}日）— もうすぐ掲載終了！応援チケットで延ばせます`; dEl.className = 'text-xs font-bold text-orange-300'; }
+                else { dEl.innerText = `⏳ 掲載期限 ${dateStr}（あと${leftD}日）`; dEl.className = 'text-xs font-bold text-slate-300'; }
+            }
             document.getElementById('support-count-text').innerText = post.supportCount ? `（これまでに ${post.supportCount} 枚）` : '';
             show('admin-hide-btn', isAdmin);
             show('admin-history-btn', isAdmin);
