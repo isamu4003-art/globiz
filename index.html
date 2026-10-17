@@ -87,6 +87,7 @@
                     <option value="newest">✨ 新着順（新しい順）</option>
                     <option value="updated">⚡️ 最近アプデがあった順</option>
                     <option value="cheers">🔥 応援数順（人気順）</option>
+                    <option value="support">🎫 応援チケット順</option>
                     <option value="progress">🎯 達成率順（クラファン）</option>
                 </select>
             </div>
@@ -481,6 +482,16 @@
             </div>
         
     
+    <!-- 応援チケット -->
+            <div id="support-box" class="mb-6 hidden bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4 text-center space-y-2">
+                <p class="text-xs text-slate-100 font-bold"><i class="fa-solid fa-ticket text-amber-400 mr-1"></i>この挑戦に「応援チケット」を贈る</p>
+                <p class="text-[11px] text-slate-300">¥500で、この投稿の掲載期間が<b class="text-amber-300">7日</b>延びます。<span id="support-count-text" class="text-amber-300 font-bold"></span></p>
+                <button id="support-btn" onclick="giftSupportTicket()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-gift mr-1"></i> 応援チケットを贈る（¥500）
+                </button>
+                <p class="text-[10px] text-slate-500 leading-relaxed">※ 投稿者への寄付・送金ではなく、投稿の掲載期間を延ばすサービスです。決済後の返金はできません。</p>
+            </div>
+
     <!-- 応募・問い合わせ -->
             <div id="detail-contact-container" class="mb-6 hidden">
                 <a id="detail-contact-btn" href="#" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-emerald-500/20">
@@ -708,6 +719,10 @@
         let visibleCount = 12;
         let lastFilterSig = '';
         let pendingDeepPost = new URLSearchParams(window.location.search).get('post');
+        if (new URLSearchParams(window.location.search).get('supported')) {
+            window.history.replaceState({}, document.title, window.location.pathname + (pendingDeepPost ? '?post=' + encodeURIComponent(pendingDeepPost) : ''));
+            setTimeout(() => alert('🎫 応援チケットをありがとうございます！反映まで数秒〜1分ほどかかる場合があります。'), 1200);
+        }
         const PAGE_SIZE = 12;
         const DAY = 86400000;
         const LISTING_DAYS = 30;
@@ -1218,6 +1233,8 @@ async function loadUserProfile(uid, defaultAuthUser) {
 
             if (currentSortOrder === 'cheers') {
                 filtered.sort((a, b) => (b.cheers || 0) - (a.cheers || 0));
+            } else if (currentSortOrder === 'support') {
+                filtered.sort((a, b) => (b.supportCount || 0) - (a.supportCount || 0) || (b.cheers || 0) - (a.cheers || 0));
             } else if (currentSortOrder === 'updated') {
                 filtered.sort((a, b) => (b.lastUpdatedAt || b.createdAt || 0) - (a.lastUpdatedAt || a.createdAt || 0));
             } else if (currentSortOrder === 'progress') {
@@ -1288,6 +1305,7 @@ async function loadUserProfile(uid, defaultAuthUser) {
                     summaryText = post.details?.business || post.details?.skills || post.details?.overview || '';
                 }
 
+                if (post.supportCount > 0) subBadge += `<span class="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md ml-1"><i class="fa-solid fa-ticket mr-1"></i>${post.supportCount}</span>`;
                 if (post.pending) subBadge += `<span class="text-[10px] text-sky-300 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-md ml-1">審査中</span>`;
                 else if (post.hidden) subBadge += `<span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md ml-1">非公開</span>`;
                 else if (isExpired(post)) subBadge += `<span class="text-[10px] text-slate-300 bg-slate-500/20 border border-slate-500/30 px-2 py-0.5 rounded-md ml-1">掲載終了</span>`;
@@ -1953,6 +1971,8 @@ function escapeHtml(str) {
             const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
             show('delete-btn', mine || isAdmin);
             show('report-btn', !mine);
+            show('support-box', !mine && !post.hidden && !post.pending);
+            document.getElementById('support-count-text').innerText = post.supportCount ? `（これまでに ${post.supportCount} 枚）` : '';
             show('admin-hide-btn', isAdmin);
             show('admin-history-btn', isAdmin);
             document.getElementById('detail-history').classList.add('hidden');
@@ -2117,10 +2137,25 @@ function escapeHtml(str) {
                 box.innerHTML = items.slice(0, 10).map(p => {
                     const d = p.at?.toDate ? p.at.toDate().toLocaleDateString('ja-JP') : '';
                     const st = p.status === 'refunded' ? '<span class="text-red-400">返金済み</span>' : '';
-                    return `<div class="flex justify-between"><span>${esc(d)}　${esc(p.label || '')}（+${esc(p.tickets)}枚）</span><span>${p.amount != null ? '¥' + Number(p.amount).toLocaleString() : ''} ${st}</span></div>`;
+                    return `<div class="flex justify-between"><span>${esc(d)}　${esc(p.label || '')}${p.tickets > 0 ? `（+${esc(p.tickets)}枚）` : ''}</span><span>${p.amount != null ? '¥' + Number(p.amount).toLocaleString() : ''} ${st}</span></div>`;
                 }).join('');
             } catch (e) { box.innerText = '履歴を読み込めませんでした'; }
         }
+        // ===== 応援チケット =====
+        window.giftSupportTicket = async function() {
+            if (!currentUser) { alert('応援チケットを贈るにはログインが必要です'); loginWithGoogle(); return; }
+            if (!activePostId) return;
+            const btn = document.getElementById('support-btn');
+            btn.disabled = true;
+            try {
+                const res = await httpsCallable(functions, 'createSupportCheckout')({ postId: activePostId });
+                window.location.href = res.data.url;
+            } catch (e) {
+                btn.disabled = false;
+                alert('決済ページを開けませんでした: ' + (e.message || e.code));
+            }
+        };
+
         // ===== お問い合わせ =====
         window.openContactModal = function() {
             if (!currentUser) { alert('お問い合わせにはログインが必要です'); loginWithGoogle(); return; }
@@ -2277,6 +2312,7 @@ function escapeHtml(str) {
 1. 利用者は、クラウドファンディング、人材募集、事業紹介等の情報を、掲載枠（初回無料1回、以降は掲載チケット1枚＝5,000円（税込））を消費して投稿できます。
 2. 掲載期間は投稿（再掲載を含む）から30日間です。期間を過ぎた投稿は非表示となり、再び掲載するには掲載枠1つが必要です。
 3. 初回無料枠による投稿は、運営者の確認後に公開されます。確認の結果、掲載をお断りする場合があります。この場合、消費した掲載枠は返還しません。
+4. 利用者は、他の利用者の投稿に「応援チケット」（1枚500円（税込））を贈ることができます。応援チケットは、対象の投稿の掲載期間を7日延ばすサービスであり、投稿者への寄付・出資・送金ではありません。決済後の返金はできません。
 
 第3条（禁止事項）
 法令・公序良俗に反する投稿、虚偽の情報、他者の権利侵害、詐欺的・勧誘的な投稿、当サービスの運営を妨げる行為を禁止します。
@@ -2328,6 +2364,7 @@ Googleアカウントの氏名・メールアドレス・プロフィール画�
 支払時期：購入手続き時（月額プランは毎月の更新日）
 提供時期：決済完了後、直ちに利用可能
 掲載期間：投稿から30日間（再掲載には掲載枠1つが必要）
+応援チケット：1枚 500円（税込）。対象の投稿の掲載期間が7日延びます（投稿者への寄付・送金ではありません）。
 返品・キャンセル：デジタル商品の性質上、決済後の返金はお受けできません（二重決済など当方の誤りによる場合を除く）。月額プランは、マイページの「プランの管理・解約・領収書」からいつでも解約でき、次回更新日の前日までに手続きすれば次回以降の請求は発生しません。解約後も、付与済みのチケットは引き続きご利用いただけます。`]
             };
             const [title, body] = L[t] || ['規約情報', ''];
